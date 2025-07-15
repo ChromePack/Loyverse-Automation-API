@@ -1,0 +1,44 @@
+# Dependencies
+node_modules/
+
+# Environment files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Build output
+dist/
+build/
+
+# Logs
+*.log
+
+# CSV files
+*.csv
+
+# Download and processing directories
+downloads/
+processing/
+
+# Cache directories
+.cache/
+.parcel-cache/
+
+# Coverage reports
+coverage/
+
+# Temporary files
+*.tmp
+*.temp
+
+# Lock files
+yarn.lock
+package-lock.json
+
+# Documentation
+*.md
+
+# Config files that should keep original formatting
+.gitignore 

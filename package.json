@@ -1,0 +1,32 @@
+{
+  "name": "Loyverse-Automation-API",
+  "version": "1.0.0",
+  "main": "src/server.js",
+  "repository": "https://github.com/ChromePack/Loyverse-Automation-API.git",
+  "author": "ChromePackDev <developer@chromepack.dev>",
+  "license": "MIT",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
+    "lint": "eslint src/",
+    "lint:fix": "eslint src/ --fix",
+    "format": "prettier --write src/",
+    "format:check": "prettier --check src/",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.14",
+    "eslint": "^9.31.0",
+    "nodemon": "^3.1.10",
+    "prettier": "^3.6.2"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "csv-parser": "^3.2.0",
+    "dotenv": "^17.2.0",
+    "express": "^5.1.0",
+    "helmet": "^8.1.0",
+    "morgan": "^1.10.0",
+    "puppeteer": "^24.13.0"
+  }
+}
