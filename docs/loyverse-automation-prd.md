@@ -1,619 +1,829 @@
-# Product Requirements Document
-## Loyverse POS Daily Sales Automation System
+# Backend API Requirements Document
+## Loyverse POS Data Extraction API
 
 **Document Version:** 1.0  
 **Date:** January 2025  
-**Project Duration:** 14 Days  
-**Budget:** $225 USD (Fixed Price)  
-**Client Location:** Manila, Philippines
+**Focus:** Backend API & Puppeteer Automation
 
 ---
 
 ## Table of Contents
-1. [Executive Summary](#executive-summary)
-2. [Project Overview](#project-overview)
-3. [Business Requirements](#business-requirements)
-4. [Technical Architecture](#technical-architecture)
-5. [Functional Requirements](#functional-requirements)
-6. [Non-Functional Requirements](#non-functional-requirements)
-7. [System Workflow](#system-workflow)
-8. [Data Specifications](#data-specifications)
-9. [Security Requirements](#security-requirements)
-10. [Infrastructure Requirements](#infrastructure-requirements)
-11. [Integration Requirements](#integration-requirements)
-12. [User Interface Requirements](#user-interface-requirements)
-13. [Testing Requirements](#testing-requirements)
-14. [Deployment Strategy](#deployment-strategy)
-15. [Maintenance & Support](#maintenance-support)
-16. [Project Timeline](#project-timeline)
-17. [Success Metrics](#success-metrics)
-18. [Risk Management](#risk-management)
-19. [Appendices](#appendices)
+1. [Overview](#overview)
+2. [API Endpoints](#api-endpoints)
+3. [Puppeteer Automation Flow](#puppeteer-automation-flow)
+4. [Data Models](#data-models)
+5. [CSV Processing Logic](#csv-processing-logic)
+6. [Error Handling](#error-handling)
+7. [Environment Configuration](#environment-configuration)
 
 ---
 
-## 1. Executive Summary {#executive-summary}
+## 1. Overview {#overview}
 
 ### 1.1 Purpose
-This document defines the requirements for developing an automated system that extracts daily sales data from Loyverse POS system and populates Google Sheets for 5 retail store branches in Manila, Philippines.
+Develop a Node.js/Express API that uses Puppeteer to automate data extraction from Loyverse POS system via CSV downloads.
 
-### 1.2 Scope
-The project encompasses the development of a fully automated solution using Puppeteer.js for web automation, Node.js/Express for backend processing, n8n for workflow orchestration, and Google Sheets for data storage.
+### 1.2 Core Functionality
+- Automate login to Loyverse POS dashboard
+- Navigate to Sales by Item report
+- Iterate through 5 store branches
+- Download CSV files for each store
+- Process and return structured data
 
-### 1.3 Key Objectives
-- Eliminate manual daily data entry across 5 store branches
-- Ensure 99%+ automation reliability
-- Provide cost-effective solution with minimal monthly expenses
-- Deliver user-friendly admin controls for non-technical users
-- Complete project within 14-day timeline and $225 budget
-
----
-
-## 2. Project Overview {#project-overview}
-
-### 2.1 Current State
-- **Manual Process:** Staff manually extracts sales data from Loyverse POS
-- **Time Investment:** Approximately 30-45 minutes daily
-- **Error Rate:** Human errors in data entry
-- **Scalability Issues:** Difficult to maintain consistency across 5 stores
-
-### 2.2 Future State
-- **Automated Process:** System runs daily at 11:00 PM Manila time
-- **Time Savings:** Zero manual intervention required
-- **Accuracy:** 100% data accuracy from CSV exports
-- **Scalability:** Easily handles all 5 stores with room for expansion
-
-### 2.3 Project Constraints
-- **Budget:** $225 USD fixed price
-- **Timeline:** 14 days from project start
-- **Technical:** Client has limited technical expertise
-- **Cost:** Minimize ongoing monthly expenses
+### 1.3 Technology Stack
+- **Runtime:** Node.js
+- **Framework:** Express.js
+- **Automation:** Puppeteer
+- **CSV Parsing:** csv-parser
+- **File System:** fs/promises
 
 ---
 
-## 3. Business Requirements {#business-requirements}
+## 2. API Endpoints {#api-endpoints}
 
-### 3.1 Core Business Needs
-1. **Daily Sales Tracking:** Automated extraction of sales data for all items sold
-2. **Multi-Store Support:** Handle 5 different store branches
-3. **Data Organization:** Separate sheets per store for performance
-4. **Historical Records:** Maintain daily records for monthly archiving
-5. **Accessibility:** Data available in Google Sheets for easy access
+### 2.1 Extract Daily Sales
+**Endpoint:** `POST /api/extract-daily-sales`
 
-### 3.2 Stakeholders
-- **Primary User:** Job Gonzales (Company Admin)
-- **End Users:** Store managers and accounting staff
-- **Developer:** Mostafa Salehi (mostafasalehi796@gmail.com)
-- **Store Branches:** 5 locations including "Apung Iska - MAT"
-
-### 3.3 Business Value
-- **Labor Cost Savings:** ~15 hours/week of manual work eliminated
-- **Improved Accuracy:** Elimination of human data entry errors
-- **Real-time Insights:** Daily updated sales data for decision making
-- **Scalability:** Easy to add new stores without additional effort
-
----
-
-## 4. Technical Architecture {#technical-architecture}
-
-### 4.1 System Components
-
-```
-┌─────────────────┐     ┌──────────────────┐     ┌─────────────────┐
-│   Loyverse POS  │────▶│  Puppeteer.js    │────▶│   CSV Files     │
-│   Dashboard     │     │  Web Automation   │     │  (Downloads)    │
-└─────────────────┘     └──────────────────┘     └────────┬────────┘
-                                                           │
-                        ┌──────────────────┐               │
-                        │   n8n Workflow   │◀──────────────┤
-                        │   (Self-hosted)  │               │
-                        └────────┬─────────┘               │
-                                 │                         │
-                        ┌────────▼─────────┐     ┌────────▼────────┐
-                        │  Google Sheets   │     │  Node.js API    │
-                        │  (5 Store Tabs)  │◀────│  CSV Processing │
-                        └──────────────────┘     └─────────────────┘
+**Request Body:**
+```json
+{
+  "date": "2025-01-15",  // Optional, defaults to today
+  "stores": ["all"]      // Optional, array of store names or "all"
+}
 ```
 
-### 4.2 Technology Stack
-- **Web Automation:** Puppeteer.js (headless Chrome)
-- **Backend:** Node.js with Express.js framework
-- **CSV Processing:** csv-parser library
-- **Workflow Engine:** n8n (self-hosted)
-- **Data Storage:** Google Sheets API v4
-- **Hosting:** Google Cloud Platform (GCP)
-- **Version Control:** Git repository
-
-### 4.3 System Architecture Principles
-1. **Modularity:** Separate concerns for maintenance
-2. **Reliability:** Built-in retry mechanisms
-3. **Scalability:** Easy to add new stores
-4. **Security:** Encrypted credential storage
-5. **Maintainability:** Clean code with documentation
-
----
-
-## 5. Functional Requirements {#functional-requirements}
-
-### 5.1 Authentication Management
-- **FR-001:** System shall securely store Loyverse login credentials
-- **FR-002:** System shall handle session management and re-authentication
-- **FR-003:** Credentials must be encrypted at rest
-- **FR-004:** Support for invitation-based access system
-
-### 5.2 Data Extraction
-- **FR-005:** Navigate to Loyverse Reports → Sales by Item
-- **FR-006:** Set date filter to current day automatically
-- **FR-007:** Iterate through all 5 store branches
-- **FR-008:** Handle page refresh after store selection
-- **FR-009:** Trigger CSV export for each store
-- **FR-010:** Monitor and wait for download completion
-
-### 5.3 CSV Processing
-- **FR-011:** Parse downloaded CSV files
-- **FR-012:** Extract: Item name, Category, Items sold, Gross sales
-- **FR-013:** Add metadata: Date Sold, Store Branch
-- **FR-014:** Validate data integrity
-- **FR-015:** Clean up temporary files after processing
-
-### 5.4 Data Population
-- **FR-016:** Connect to Google Sheets via API
-- **FR-017:** Create/update separate sheet per store
-- **FR-018:** Append daily data to existing records
-- **FR-019:** Maintain column order: Date Sold | Store Branch | Item name | Category | Items sold | Gross sales
-- **FR-020:** Handle duplicate prevention
-
-### 5.5 Scheduling & Automation
-- **FR-021:** Execute daily at 11:00 PM Manila time
-- **FR-022:** Support manual trigger via API
-- **FR-023:** Queue management for sequential processing
-- **FR-024:** Notification on completion/failure
-
-### 5.6 Admin Dashboard
-- **FR-025:** View automation status and history
-- **FR-026:** Manual trigger capability
-- **FR-027:** View error logs and diagnostics
-- **FR-028:** Download automation reports
-- **FR-029:** Update store list configuration
-
----
-
-## 6. Non-Functional Requirements {#non-functional-requirements}
-
-### 6.1 Performance
-- **NFR-001:** Complete daily extraction within 30 minutes
-- **NFR-002:** Process CSV files under 1MB in less than 5 seconds
-- **NFR-003:** API response time under 2 seconds
-- **NFR-004:** Support concurrent requests without degradation
-
-### 6.2 Reliability
-- **NFR-005:** 99% uptime for automation service
-- **NFR-006:** Automatic retry for failed extractions (3 attempts)
-- **NFR-007:** Graceful handling of Loyverse downtime
-- **NFR-008:** Data consistency verification
-
-### 6.3 Security
-- **NFR-009:** HTTPS encryption for all communications
-- **NFR-010:** API key authentication for n8n integration
-- **NFR-011:** Principle of least privilege for Google Sheets access
-- **NFR-012:** Audit logging for all operations
-
-### 6.4 Usability
-- **NFR-013:** Simple admin interface for non-technical users
-- **NFR-014:** Clear error messages in plain language
-- **NFR-015:** Mobile-responsive admin dashboard
-- **NFR-016:** Intuitive navigation and controls
-
-### 6.5 Scalability
-- **NFR-017:** Support for up to 10 stores without code changes
-- **NFR-018:** Handle CSV files up to 10MB
-- **NFR-019:** Process up to 10,000 items per store
-- **NFR-020:** Maintain performance with 1 year of historical data
-
----
-
-## 7. System Workflow {#system-workflow}
-
-### 7.1 Daily Automation Flow
-
-```mermaid
-graph TD
-    A[11:00 PM Trigger] --> B[Initialize Puppeteer]
-    B --> C[Login to Loyverse]
-    C --> D[Navigate to Reports]
-    D --> E[Select Store 1]
-    E --> F[Set Date Filter]
-    F --> G[Export CSV]
-    G --> H[Wait for Download]
-    H --> I[Process CSV]
-    I --> J[Update Google Sheet]
-    J --> K{More Stores?}
-    K -->|Yes| E
-    K -->|No| L[Cleanup Files]
-    L --> M[Send Notification]
-    M --> N[End]
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "extraction_date": "2025-01-15",
+    "stores": [
+      {
+        "store_name": "Apung Iska - MAT",
+        "items_count": 145,
+        "total_sales": 25750.50,
+        "items": [
+          {
+            "date_sold": "2025-01-15",
+            "store_branch": "Apung Iska - MAT",
+            "item_name": "Coffee Latte",
+            "category": "Beverages",
+            "items_sold": 25,
+            "gross_sales": 1250.50
+          }
+        ]
+      }
+    ]
+  }
+}
 ```
 
-### 7.2 Error Handling Flow
-1. **Detection:** Identify failure point
-2. **Logging:** Record error details
-3. **Retry:** Attempt recovery (max 3 times)
-4. **Escalation:** Notify admin if unrecoverable
-5. **Fallback:** Queue for manual intervention
+### 2.2 Extract Single Store
+**Endpoint:** `POST /api/extract-store`
 
-### 7.3 CSV Processing Pipeline
-1. **Download Monitoring:** Watch download directory
-2. **File Validation:** Verify CSV integrity
-3. **Data Parsing:** Extract required fields
-4. **Transformation:** Add metadata and format
-5. **Upload:** Send to Google Sheets
-6. **Cleanup:** Remove temporary files
+**Request Body:**
+```json
+{
+  "store_name": "Apung Iska - MAT",
+  "date": "2025-01-15"
+}
+```
 
----
+**Response:** Same structure as above but with single store data
 
-## 8. Data Specifications {#data-specifications}
+### 2.3 Health Check
+**Endpoint:** `GET /api/health`
 
-### 8.1 Input Data (Loyverse CSV)
-| Field | Type | Description | Example |
-|-------|------|-------------|---------|
-| Item Name | String | Product name | "Coffee Latte" |
-| Category | String | Product category | "Beverages" |
-| Items Sold | Integer | Quantity sold | 25 |
-| Gross Sales | Decimal | Total sales amount | 1250.50 |
-
-### 8.2 Output Data (Google Sheets)
-| Column | Type | Description | Example |
-|--------|------|-------------|---------|
-| Date Sold | Date | Transaction date | "2025-01-15" |
-| Store Branch | String | Store location | "Apung Iska - MAT" |
-| Item Name | String | Product name | "Coffee Latte" |
-| Category | String | Product category | "Beverages" |
-| Items Sold | Integer | Quantity sold | 25 |
-| Gross Sales | Decimal | Total sales amount | 1250.50 |
-
-### 8.3 Data Validation Rules
-- **Date Format:** YYYY-MM-DD
-- **Store Branch:** Must match predefined list
-- **Items Sold:** Non-negative integer
-- **Gross Sales:** Non-negative decimal with 2 places
-- **Required Fields:** All fields mandatory
+**Response:**
+```json
+{
+  "status": "healthy",
+  "timestamp": "2025-01-15T15:00:00Z"
+}
+```
 
 ---
 
-## 9. Security Requirements {#security-requirements}
+## 3. Puppeteer Automation Flow {#puppeteer-automation-flow}
 
-### 9.1 Authentication & Authorization
-- **Credential Storage:** AES-256 encryption
-- **API Keys:** Environment variables
-- **Access Control:** Role-based permissions
-- **Session Management:** 24-hour timeout
+### 3.1 Main Automation Steps
 
-### 9.2 Data Protection
-- **In Transit:** TLS 1.2+ encryption
-- **At Rest:** Encrypted storage
-- **CSV Files:** Temporary with secure deletion
-- **Logs:** Sanitized sensitive information
+```javascript
+// Pseudo-code flow
+1. Launch browser (headless: true)
+2. Navigate to r.loyverse.com
+3. Login with credentials
+4. Navigate to Reports → Sales by Item
+5. For each store:
+   a. Select store from dropdown
+   b. Handle page refresh
+   c. Set date filter
+   d. Click export/download button
+   e. Wait for CSV download
+   f. Move CSV to processing directory
+6. Close browser
+7. Process all CSV files
+8. Return structured data
+```
 
-### 9.3 Audit & Compliance
-- **Activity Logging:** All operations tracked
-- **Access Logs:** User access recorded
-- **Error Logs:** Detailed for debugging
-- **Retention:** 90-day log retention
+### 3.2 Key Selectors & Navigation
+- **Login Form:** Username and password fields
+- **Reports Menu:** Navigate to Sales by Item section
+- **Store Selector:** Dropdown with store branches
+- **Date Filter:** Date picker for report range
+- **Export Button:** CSV download trigger
 
----
-
-## 10. Infrastructure Requirements {#infrastructure-requirements}
-
-### 10.1 Server Specifications
-- **Provider:** Google Cloud Platform
-- **Instance Type:** e2-micro (minimum)
-- **OS:** Ubuntu 22.04 LTS
-- **Storage:** 20GB SSD
-- **RAM:** 2GB minimum
-- **Network:** Static IP address
-
-### 10.2 Software Requirements
-- **Node.js:** v18.x or higher
-- **Chrome:** Latest stable for Puppeteer
-- **n8n:** Latest self-hosted version
-- **PM2:** Process management
-- **Nginx:** Reverse proxy
-
-### 10.3 Monitoring & Backup
-- **Uptime Monitoring:** 5-minute intervals
-- **Resource Monitoring:** CPU, RAM, Disk
-- **Backup Schedule:** Daily configuration backup
-- **Recovery Time:** < 1 hour RTO
+### 3.3 Download Handling
+- Configure Puppeteer download path
+- Monitor download completion
+- Handle file naming conventions
+- Move completed files for processing
 
 ---
 
-## 11. Integration Requirements {#integration-requirements}
+## 4. Data Models {#data-models}
 
-### 11.1 Loyverse POS Integration
-- **URL:** r.loyverse.com
-- **Method:** Web automation (Puppeteer)
-- **Authentication:** Username/password
-- **Data Format:** CSV export
+### 4.1 Store Configuration
+```javascript
+const STORES = [
+  "Apung Iska - MAT",
+  "Store 2",
+  "Store 3", 
+  "Store 4",
+  "Store 5"
+];
+```
 
-### 11.2 Google Sheets Integration
-- **API Version:** Google Sheets API v4
-- **Authentication:** Service account
-- **Permissions:** Read/write to specific sheets
-- **Rate Limits:** 100 requests per 100 seconds
+### 4.2 Processed Item Structure
+```javascript
+{
+  date_sold: String,      // Format: YYYY-MM-DD
+  store_branch: String,   // Store name
+  item_name: String,      // Product name
+  category: String,       // Product category
+  items_sold: Number,     // Quantity
+  gross_sales: Number     // Sales amount
+}
+```
 
-### 11.3 n8n Integration
-- **Deployment:** Self-hosted
-- **Triggers:** Cron schedule and webhook
-- **Nodes:** HTTP Request, Google Sheets
-- **Error Handling:** Built-in retry logic
-
----
-
-## 12. User Interface Requirements {#user-interface-requirements}
-
-### 12.1 Admin Dashboard
-- **Technology:** React.js or Vue.js
-- **Responsive:** Mobile and desktop
-- **Authentication:** Secure login
-- **Real-time Updates:** WebSocket or polling
-
-### 12.2 Dashboard Features
-1. **Status Overview**
-   - Current automation status
-   - Last run timestamp
-   - Success/failure indicators
-
-2. **Store Management**
-   - List of active stores
-   - Enable/disable stores
-   - Add new store configuration
-
-3. **Logs & Reports**
-   - Execution history
-   - Error logs with details
-   - Export functionality
-
-4. **Manual Controls**
-   - Trigger immediate run
-   - Stop running process
-   - Download backup data
+### 4.3 CSV Column Mapping
+```javascript
+const CSV_COLUMNS = {
+  'Item Name': 'item_name',
+  'Category': 'category',
+  'Items Sold': 'items_sold',
+  'Gross Sales': 'gross_sales'
+};
+```
 
 ---
 
-## 13. Testing Requirements {#testing-requirements}
+## 5. CSV Processing Logic {#csv-processing-logic}
 
-### 13.1 Unit Testing
-- **Coverage:** Minimum 80%
-- **Framework:** Jest or Mocha
-- **Focus Areas:** CSV parsing, data transformation
+### 5.1 File Processing Flow
+1. **Read CSV File:** Use fs.createReadStream
+2. **Parse with csv-parser:** Handle headers and data rows
+3. **Transform Data:** Add metadata (date, store)
+4. **Validate Records:** Ensure required fields exist
+5. **Clean Up:** Delete temporary CSV files
 
-### 13.2 Integration Testing
-- **Puppeteer Scripts:** All navigation paths
-- **API Endpoints:** All routes and methods
-- **Google Sheets:** CRUD operations
+### 5.2 Data Transformation
+```javascript
+// Add metadata to each row
+row.date_sold = extractionDate;
+row.store_branch = currentStore;
+row.items_sold = parseInt(row.items_sold);
+row.gross_sales = parseFloat(row.gross_sales);
+```
 
-### 13.3 End-to-End Testing
-- **Full Workflow:** Complete automation cycle
-- **Error Scenarios:** Network failures, login errors
-- **Performance:** Load testing with large CSV files
-
-### 13.4 User Acceptance Testing
-- **Duration:** 2 days with client
-- **Scenarios:** Daily operations, error recovery
-- **Sign-off:** Client approval required
-
----
-
-## 14. Deployment Strategy {#deployment-strategy}
-
-### 14.1 Deployment Phases
-1. **Development Environment:** Local testing
-2. **Staging Environment:** GCP test instance
-3. **Production Environment:** GCP production instance
-
-### 14.2 Deployment Checklist
-- [ ] Code review completed
-- [ ] All tests passing
-- [ ] Environment variables configured
-- [ ] SSL certificates installed
-- [ ] Monitoring alerts configured
-- [ ] Backup procedures tested
-- [ ] Documentation updated
-- [ ] Client training completed
-
-### 14.3 Rollback Plan
-- **Strategy:** Blue-green deployment
-- **Rollback Time:** < 5 minutes
-- **Data Preservation:** No data loss during rollback
+### 5.3 File Management
+- **Download Directory:** `./downloads/`
+- **Processing Directory:** `./processing/`
+- **Cleanup:** Remove files after successful processing
 
 ---
 
-## 15. Maintenance & Support {#maintenance-support}
+## 6. Error Handling {#error-handling}
 
-### 15.1 Warranty Period
-- **Duration:** 30 days post-deployment
-- **Coverage:** Bug fixes and critical issues
-- **Response Time:** Within 24 hours
-- **Resolution Time:** Within 48 hours
+### 6.1 Error Types
+| Error Type | Description | Response Code |
+|------------|-------------|---------------|
+| LOGIN_FAILED | Invalid credentials or login page changed | 401 |
+| NAVIGATION_ERROR | Unable to find expected elements | 500 |
+| DOWNLOAD_TIMEOUT | CSV download didn't complete | 504 |
+| PARSE_ERROR | CSV file corrupted or invalid format | 422 |
+| STORE_NOT_FOUND | Requested store not in list | 404 |
 
-### 15.2 Documentation Deliverables
-1. **Technical Documentation**
-   - System architecture
-   - API documentation
-   - Database schema
-   - Deployment guide
+### 6.2 Retry Logic
+- **Max Retries:** 3 attempts
+- **Retry Delay:** 5 seconds between attempts
+- **Timeout Settings:** 30 seconds for downloads
 
-2. **User Documentation**
-   - Admin user guide
-   - Troubleshooting guide
-   - FAQ section
-
-3. **Operational Documentation**
-   - Monitoring setup
-   - Backup procedures
-   - Disaster recovery
-
-### 15.3 Knowledge Transfer
-- **Training Session:** 2-hour virtual session
-- **Video Tutorials:** Key operations recorded
-- **Support Channel:** Email support during warranty
+### 6.3 Error Response Format
+```json
+{
+  "success": false,
+  "error": {
+    "code": "DOWNLOAD_TIMEOUT",
+    "message": "CSV download timed out for store: Apung Iska - MAT",
+    "timestamp": "2025-01-15T15:00:00Z"
+  }
+}
+```
 
 ---
 
-## 16. Project Timeline {#project-timeline}
+## 7. Environment Configuration {#environment-configuration}
 
-### 16.1 Week 1 (Days 1-7)
-
-| Day | Tasks | Deliverables |
-|-----|-------|--------------|
-| 1-2 | Puppeteer implementation | Working automation script |
-| 3-4 | Backend API development | REST API with endpoints |
-| 5-6 | n8n workflow setup | Configured workflows |
-| 7 | Integration testing | Test results report |
-
-### 16.2 Week 2 (Days 8-14)
-
-| Day | Tasks | Deliverables |
-|-----|-------|--------------|
-| 8-9 | GCP deployment | Live staging environment |
-| 10-11 | End-to-end testing | UAT scenarios completed |
-| 12-13 | Security & admin UI | Secure production system |
-| 14 | Documentation & handover | Complete project package |
-
-### 16.3 Milestones
-- **Milestone 1:** Development complete (Day 7) - 50% payment
-- **Milestone 2:** Production deployment (Day 14) - 50% payment
-
----
-
-## 17. Success Metrics {#success-metrics}
-
-### 17.1 Technical Metrics
-- **Automation Success Rate:** ≥ 99%
-- **Processing Time:** < 30 minutes for all stores
-- **Data Accuracy:** 100% match with source
-- **System Uptime:** ≥ 99%
-
-### 17.2 Business Metrics
-- **Time Saved:** 15+ hours per week
-- **Error Reduction:** 100% elimination of manual errors
-- **Cost Savings:** ROI within 1 month
-- **User Satisfaction:** Positive feedback from admin
-
-### 17.3 Acceptance Criteria
-1. ✓ Automated daily execution without intervention
-2. ✓ All 5 stores data extracted successfully
-3. ✓ Google Sheets updated with correct format
-4. ✓ Admin dashboard fully functional
-5. ✓ Documentation complete and approved
-6. ✓ 3 consecutive days of successful operation
-
----
-
-## 18. Risk Management {#risk-management}
-
-### 18.1 Technical Risks
-
-| Risk | Probability | Impact | Mitigation |
-|------|-------------|--------|------------|
-| Loyverse UI changes | Medium | High | Use stable selectors, monitor changes |
-| API rate limits | Low | Medium | Implement throttling and queuing |
-| Server downtime | Low | High | Auto-restart, monitoring alerts |
-| Data corruption | Low | High | Validation checks, backups |
-
-### 18.2 Business Risks
-
-| Risk | Probability | Impact | Mitigation |
-|------|-------------|--------|------------|
-| Scope creep | Medium | Medium | Clear requirements, change control |
-| Timeline delay | Low | Medium | Daily progress tracking |
-| User adoption | Low | Low | Comprehensive training |
-
-### 18.3 Contingency Plans
-- **Loyverse Changes:** Rapid update capability (< 24 hours)
-- **System Failure:** Manual extraction procedure documented
-- **Data Loss:** Daily backups with 7-day retention
-
----
-
-## 19. Appendices {#appendices}
-
-### Appendix A: Store Branch List
-1. Apung Iska - MAT
-2. [Store 2 Name - TBD]
-3. [Store 3 Name - TBD]
-4. [Store 4 Name - TBD]
-5. [Store 5 Name - TBD]
-
-### Appendix B: API Endpoints
-
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/api/extract-daily-sales` | POST | Trigger manual extraction |
-| `/api/health` | GET | System health check |
-| `/api/logs` | GET | Retrieve system logs |
-| `/api/stores` | GET | List configured stores |
-| `/api/download-status` | GET | Check download progress |
-
-### Appendix C: Error Codes
-
-| Code | Description | Resolution |
-|------|-------------|------------|
-| E001 | Login failed | Check credentials |
-| E002 | Store not found | Verify store name |
-| E003 | Download timeout | Retry extraction |
-| E004 | CSV parse error | Check file format |
-| E005 | Sheets API error | Verify permissions |
-
-### Appendix D: Environment Variables
-
+### 7.1 Required Environment Variables
 ```env
 # Loyverse Credentials
-LOYVERSE_USERNAME=
-LOYVERSE_PASSWORD=
+LOYVERSE_USERNAME=your_username
+LOYVERSE_PASSWORD=your_password
 
-# Google Sheets
-GOOGLE_SERVICE_ACCOUNT_KEY=
-GOOGLE_SPREADSHEET_ID=
+# API Configuration  
+PORT=3000
+NODE_ENV=production
 
-# API Configuration
-API_PORT=3000
-API_KEY=
-
-# n8n Configuration
-N8N_WEBHOOK_URL=
-
-# System Settings
-TIMEZONE=Asia/Manila
+# Puppeteer Settings
+PUPPETEER_HEADLESS=true
 DOWNLOAD_TIMEOUT=30000
-MAX_RETRIES=3
+NAVIGATION_TIMEOUT=30000
+
+# File Paths
+DOWNLOAD_PATH=./downloads
+PROCESSING_PATH=./processing
 ```
 
-### Appendix E: Sample CSV Structure
+### 7.2 Puppeteer Launch Configuration
+```javascript
+{
+  headless: true,
+  args: ['--no-sandbox', '--disable-setuid-sandbox'],
+  defaultViewport: { width: 1920, height: 1080 }
+}
+```
 
-```csv
-"Item Name","Category","Items Sold","Gross Sales"
-"Coffee Latte","Beverages",25,1250.50
-"Chocolate Cake","Desserts",10,800.00
-"Sandwich","Food",15,1125.75
+### 7.3 Express Server Setup
+- **Body Parser:** JSON request handling
+- **CORS:** Enabled for n8n integration
+- **Port:** Configurable via environment variable
+- **Error Middleware:** Global error handling
+
+---
+
+## API Usage Examples
+
+### Example 1: Extract All Stores
+```bash
+curl -X POST http://localhost:3000/api/extract-daily-sales \
+  -H "Content-Type: application/json" \
+  -d '{"date": "2025-01-15"}'
+```
+
+### Example 2: Extract Specific Store
+```bash
+curl -X POST http://localhost:3000/api/extract-store \
+  -H "Content-Type: application/json" \
+  -d '{"store_name": "Apung Iska - MAT", "date": "2025-01-15"}'
+```
+
+### Example 3: Health Check
+```bash
+curl http://localhost:3000/api/health
 ```
 
 ---
 
-## Document Control
+## Implementation Notes
 
-| Version | Date | Author | Changes |
-|---------|------|--------|---------|
-| 1.0 | Jan 2025 | Development Team | Initial PRD |
+### Browser Automation Considerations
+- Handle dynamic page loads with proper wait conditions
+- Use explicit waits rather than fixed delays
+- Implement screenshot capture for debugging
+- Handle session timeouts gracefully
+
+### CSV Processing Considerations
+- Support various CSV encodings (UTF-8, ISO-8859-1)
+- Handle empty rows and malformed data
+- Implement streaming for large files
+- Validate numeric fields
+
+### Performance Optimization
+- Reuse browser instance for multiple stores
+- Process stores sequentially to avoid conflicts
+- Implement connection pooling
+- Clean up resources properly
 
 ---
 
-## Approval Sign-offs
+## 8. Step-by-Step Implementation Plan {#implementation-plan}
 
-| Role | Name | Signature | Date |
-|------|------|-----------|------|
-| Client | Job Gonzales | _________ | _____ |
-| Developer | Mostafa Salehi | _________ | _____ |
+### Phase 1: Project Setup & Foundation
+
+#### Task 1.1: Initialize Project Structure
+**Subtasks:**
+- [ ] Create project directory structure
+  - [ ] Create `src/` directory for source code
+  - [ ] Create `src/controllers/` for API route handlers
+  - [ ] Create `src/services/` for business logic
+  - [ ] Create `src/models/` for data models
+  - [ ] Create `src/utils/` for utility functions
+  - [ ] Create `src/middleware/` for Express middleware
+  - [ ] Create `src/config/` for configuration files
+  - [ ] Create `downloads/` and `processing/` directories
+
+#### Task 1.2: Package Management & Dependencies
+**Subtasks:**
+- [ ] Initialize package.json with `yarn init`
+- [ ] Install core dependencies:
+  - [ ] `express` - Web framework
+  - [ ] `puppeteer` - Browser automation
+  - [ ] `csv-parser` - CSV processing
+  - [ ] `dotenv` - Environment variables
+  - [ ] `cors` - Cross-origin resource sharing
+  - [ ] `helmet` - Security middleware
+  - [ ] `morgan` - HTTP request logger
+- [ ] Install development dependencies:
+  - [ ] `eslint` - Code linting
+  - [ ] `prettier` - Code formatting
+  - [ ] `nodemon` - Development server
+  - [ ] `@types/node` - TypeScript definitions
+
+#### Task 1.3: Configuration Setup
+**Subtasks:**
+- [ ] Create `.env.example` file with all required variables
+- [ ] Create `.env` file for local development
+- [ ] Set up ESLint configuration with clean code rules
+- [ ] Set up Prettier configuration
+- [ ] Create `.gitignore` file
+
+---
+
+### Phase 2: Core Infrastructure Development
+
+#### Task 2.1: Express Server Setup
+**Subtasks:**
+- [ ] Create `src/app.js` - Main Express application
+  - [ ] Configure middleware (helmet, cors, morgan, body-parser)
+  - [ ] Set up route handlers
+  - [ ] Implement global error handling middleware
+  - [ ] Add request validation middleware
+- [ ] Create `src/server.js` - Server startup logic
+  - [ ] Environment variable validation
+  - [ ] Graceful shutdown handling
+  - [ ] Port configuration
+- [ ] Create `src/config/index.js` - Centralized configuration
+  - [ ] Environment-specific settings
+  - [ ] Puppeteer configuration
+  - [ ] File path configurations
+
+#### Task 2.2: Data Models & Constants
+**Subtasks:**
+- [ ] Create `src/models/Store.js` - Store data model
+  - [ ] Store configuration array
+  - [ ] Store validation functions
+  - [ ] Store name mapping utilities
+- [ ] Create `src/models/SalesItem.js` - Sales item data model
+  - [ ] Item structure definition
+  - [ ] Data validation methods
+  - [ ] Type conversion utilities
+- [ ] Create `src/constants/index.js` - Application constants
+  - [ ] CSV column mappings
+  - [ ] Error codes and messages
+  - [ ] Timeout configurations
+
+#### Task 2.3: Utility Functions
+**Subtasks:**
+- [ ] Create `src/utils/fileManager.js` - File operations
+  - [ ] Directory creation functions
+  - [ ] File cleanup utilities
+  - [ ] Download path management
+- [ ] Create `src/utils/dateUtils.js` - Date manipulation
+  - [ ] Date formatting functions
+  - [ ] Date validation utilities
+  - [ ] Default date handling
+- [ ] Create `src/utils/logger.js` - Logging utilities
+  - [ ] Structured logging setup
+  - [ ] Log level configuration
+  - [ ] Error logging functions
+
+---
+
+### Phase 3: Puppeteer Automation Implementation
+
+#### Task 3.1: Browser Management Service
+**Subtasks:**
+- [ ] Create `src/services/BrowserService.js` - Browser lifecycle management
+  - [ ] Browser launch configuration
+  - [ ] Browser instance management
+  - [ ] Page creation and cleanup
+  - [ ] Error handling for browser operations
+- [ ] Implement browser launch options
+  - [ ] Headless mode configuration
+  - [ ] Viewport settings
+  - [ ] Chrome arguments setup
+- [ ] Add download configuration
+  - [ ] Download path setup
+  - [ ] Download behavior settings
+  - [ ] File completion monitoring
+
+#### Task 3.2: Loyverse Authentication Service
+**Subtasks:**
+- [ ] Create `src/services/AuthService.js` - Authentication logic
+  - [ ] Login page navigation
+  - [ ] Credential input automation
+  - [ ] Login success verification
+  - [ ] Session management
+- [ ] Implement element selectors
+  - [ ] Username field selector
+  - [ ] Password field selector
+  - [ ] Login button selector
+  - [ ] Error message selectors
+- [ ] Add authentication error handling
+  - [ ] Invalid credentials detection
+  - [ ] Network timeout handling
+  - [ ] Captcha detection (if applicable)
+
+#### Task 3.3: Navigation Service
+**Subtasks:**
+- [ ] Create `src/services/NavigationService.js` - Page navigation logic
+  - [ ] Reports menu navigation
+  - [ ] Sales by Item page navigation
+  - [ ] Store selection automation
+  - [ ] Date filter configuration
+- [ ] Implement dynamic waiting strategies
+  - [ ] Element visibility waiting
+  - [ ] Page load completion
+  - [ ] AJAX request completion
+- [ ] Add navigation error handling
+  - [ ] Element not found errors
+  - [ ] Timeout errors
+  - [ ] Page structure changes
+
+#### Task 3.4: Data Extraction Service
+**Subtasks:**
+- [ ] Create `src/services/ExtractionService.js` - Main extraction orchestrator
+  - [ ] Multi-store extraction flow
+  - [ ] Single store extraction
+  - [ ] Progress tracking
+  - [ ] Error recovery mechanisms
+- [ ] Implement store iteration logic
+  - [ ] Store dropdown selection
+  - [ ] Page refresh handling
+  - [ ] Date range setting
+  - [ ] CSV download triggering
+- [ ] Add download monitoring
+  - [ ] Download completion detection
+  - [ ] File naming verification
+  - [ ] Download timeout handling
+
+---
+
+### Phase 4: CSV Processing Implementation
+
+#### Task 4.1: CSV Parser Service
+**Subtasks:**
+- [ ] Create `src/services/CsvParserService.js` - CSV processing logic
+  - [ ] Stream-based CSV reading
+  - [ ] Header validation
+  - [ ] Data transformation pipeline
+  - [ ] Error handling for malformed data
+- [ ] Implement data transformation
+  - [ ] Column mapping application
+  - [ ] Data type conversion
+  - [ ] Metadata addition (date, store)
+  - [ ] Data validation
+- [ ] Add encoding support
+  - [ ] UTF-8 encoding handling
+  - [ ] ISO-8859-1 encoding support
+  - [ ] Encoding detection
+
+#### Task 4.2: Data Validation Service
+**Subtasks:**
+- [ ] Create `src/services/ValidationService.js` - Data validation
+  - [ ] Required field validation
+  - [ ] Numeric field validation
+  - [ ] Date format validation
+  - [ ] Store name validation
+- [ ] Implement validation rules
+  - [ ] Item name validation
+  - [ ] Category validation
+  - [ ] Sales amount validation
+  - [ ] Quantity validation
+- [ ] Add error reporting
+  - [ ] Validation error collection
+  - [ ] Error message formatting
+  - [ ] Invalid record logging
+
+#### Task 4.3: Data Aggregation Service
+**Subtasks:**
+- [ ] Create `src/services/AggregationService.js` - Data aggregation
+  - [ ] Store-level aggregation
+  - [ ] Total sales calculation
+  - [ ] Item count calculation
+  - [ ] Summary statistics
+- [ ] Implement data structuring
+  - [ ] Response format preparation
+  - [ ] Data grouping by store
+  - [ ] Metadata inclusion
+- [ ] Add performance optimization
+  - [ ] Memory-efficient processing
+  - [ ] Streaming aggregation
+  - [ ] Lazy evaluation
+
+---
+
+### Phase 5: API Controllers & Routes
+
+#### Task 5.1: Sales Extraction Controller
+**Subtasks:**
+- [ ] Create `src/controllers/SalesController.js` - Main sales operations
+  - [ ] Extract daily sales endpoint handler
+  - [ ] Extract single store endpoint handler
+  - [ ] Request validation
+  - [ ] Response formatting
+- [ ] Implement request processing
+  - [ ] Parameter extraction
+  - [ ] Default value handling
+  - [ ] Input sanitization
+- [ ] Add response handling
+  - [ ] Success response formatting
+  - [ ] Error response formatting
+  - [ ] Status code management
+
+#### Task 5.2: Health Check Controller
+**Subtasks:**
+- [ ] Create `src/controllers/HealthController.js` - Health monitoring
+  - [ ] Basic health check endpoint
+  - [ ] System status validation
+  - [ ] Dependency health checks
+- [ ] Implement health checks
+  - [ ] File system access check
+  - [ ] Browser availability check
+  - [ ] Memory usage monitoring
+- [ ] Add monitoring metrics
+  - [ ] Response time tracking
+  - [ ] Error rate monitoring
+  - [ ] Resource usage metrics
+
+#### Task 5.3: Route Configuration
+**Subtasks:**
+- [ ] Create `src/routes/index.js` - Main router configuration
+  - [ ] Route registration
+  - [ ] Middleware application
+  - [ ] Error handling setup
+- [ ] Create `src/routes/sales.js` - Sales routes
+  - [ ] POST /api/extract-daily-sales
+  - [ ] POST /api/extract-store
+  - [ ] Route-specific middleware
+- [ ] Create `src/routes/health.js` - Health routes
+  - [ ] GET /api/health
+  - [ ] Monitoring endpoints
+
+---
+
+### Phase 6: Error Handling & Middleware
+
+#### Task 6.1: Error Handling Middleware
+**Subtasks:**
+- [ ] Create `src/middleware/errorHandler.js` - Global error handling
+  - [ ] Error classification
+  - [ ] Error response formatting
+  - [ ] Error logging
+  - [ ] Stack trace handling
+- [ ] Implement error types
+  - [ ] Validation errors
+  - [ ] Authentication errors
+  - [ ] Timeout errors
+  - [ ] System errors
+- [ ] Add error recovery
+  - [ ] Retry mechanisms
+  - [ ] Fallback strategies
+  - [ ] Graceful degradation
+
+#### Task 6.2: Validation Middleware
+**Subtasks:**
+- [ ] Create `src/middleware/validation.js` - Request validation
+  - [ ] Schema validation
+  - [ ] Parameter validation
+  - [ ] Type checking
+  - [ ] Range validation
+- [ ] Implement validation schemas
+  - [ ] Date validation schema
+  - [ ] Store name validation
+  - [ ] Request body validation
+- [ ] Add validation error handling
+  - [ ] Error message formatting
+  - [ ] Field-specific errors
+  - [ ] Multiple error aggregation
+
+#### Task 6.3: Security Middleware
+**Subtasks:**
+- [ ] Create `src/middleware/security.js` - Security measures
+  - [ ] Rate limiting
+  - [ ] Input sanitization
+  - [ ] CORS configuration
+  - [ ] Security headers
+- [ ] Implement security checks
+  - [ ] Request size limits
+  - [ ] File type validation
+  - [ ] Path traversal prevention
+- [ ] Add monitoring
+  - [ ] Security event logging
+  - [ ] Attack detection
+  - [ ] Abuse prevention
+
+---
+
+### Phase 7: Documentation & Deployment
+
+#### Task 7.1: Code Documentation
+**Subtasks:**
+- [ ] Add JSDoc comments to all functions
+  - [ ] Parameter documentation
+  - [ ] Return value documentation
+  - [ ] Usage examples
+- [ ] Create API documentation
+  - [ ] Endpoint descriptions
+  - [ ] Request/response examples
+  - [ ] Error code documentation
+- [ ] Add inline code comments
+  - [ ] Complex logic explanation
+  - [ ] Configuration explanations
+  - [ ] Performance considerations
+
+#### Task 7.2: Deployment Configuration
+**Subtasks:**
+- [ ] Create `Dockerfile` for containerization
+  - [ ] Node.js base image
+  - [ ] Dependency installation
+  - [ ] Application setup
+- [ ] Create `docker-compose.yml`
+  - [ ] Service configuration
+  - [ ] Environment variables
+  - [ ] Volume mounting
+- [ ] Create deployment scripts
+  - [ ] Production deployment
+  - [ ] Environment setup
+  - [ ] Health check scripts
+
+#### Task 7.3: Monitoring & Logging
+**Subtasks:**
+- [ ] Set up production logging
+  - [ ] Structured logging format
+  - [ ] Log rotation
+  - [ ] Error alerting
+- [ ] Add performance monitoring
+  - [ ] Response time tracking
+  - [ ] Memory usage monitoring
+  - [ ] Error rate tracking
+- [ ] Create maintenance scripts
+  - [ ] Log cleanup
+  - [ ] File cleanup
+  - [ ] Health monitoring
+
+---
+
+### Phase 8: Quality Assurance & Optimization
+
+#### Task 8.1: Code Quality Checks
+**Subtasks:**
+- [ ] Run ESLint on all source files
+  - [ ] Fix linting errors
+  - [ ] Ensure consistent formatting
+  - [ ] Apply clean code principles
+- [ ] Perform code review
+  - [ ] Check for code smells
+  - [ ] Verify error handling
+  - [ ] Validate security measures
+- [ ] Optimize performance
+  - [ ] Identify bottlenecks
+  - [ ] Optimize critical paths
+  - [ ] Reduce memory usage
+
+#### Task 8.2: Security Assessment
+**Subtasks:**
+- [ ] Vulnerability scanning
+  - [ ] Dependency vulnerabilities
+  - [ ] Code security issues
+  - [ ] Configuration security
+- [ ] Security hardening
+  - [ ] Secure configurations
+  - [ ] Access controls
+  - [ ] Data protection
+
+#### Task 8.3: Performance Optimization
+**Subtasks:**
+- [ ] Load testing
+  - [ ] Concurrent request handling
+  - [ ] Memory consumption
+  - [ ] Response time analysis
+- [ ] Performance optimization
+  - [ ] Identify bottlenecks
+  - [ ] Optimize critical paths
+  - [ ] Reduce memory usage
+- [ ] Optimization implementation
+  - [ ] Caching strategies
+  - [ ] Connection pooling
+  - [ ] Resource optimization
+
+---
+
+### Phase 9: Production Readiness
+
+#### Task 9.1: Production Configuration
+**Subtasks:**
+- [ ] Environment configuration
+  - [ ] Production environment variables
+  - [ ] Security configurations
+  - [ ] Performance optimizations
+- [ ] Database setup (if needed)
+  - [ ] Connection configuration
+  - [ ] Migration scripts
+  - [ ] Backup strategies
+- [ ] Monitoring setup
+  - [ ] Application monitoring
+  - [ ] Infrastructure monitoring
+  - [ ] Alert configuration
+
+#### Task 9.2: Deployment Validation
+**Subtasks:**
+- [ ] Staging environment validation
+  - [ ] Full functionality validation
+  - [ ] Performance validation
+  - [ ] Security verification
+- [ ] Production deployment
+  - [ ] Deployment script execution
+  - [ ] Health check validation
+  - [ ] Rollback preparation
+- [ ] Post-deployment monitoring
+  - [ ] Error monitoring
+  - [ ] Performance monitoring
+  - [ ] User feedback collection
+
+#### Task 9.3: Maintenance Planning
+**Subtasks:**
+- [ ] Create maintenance documentation
+  - [ ] Troubleshooting guide
+  - [ ] Common issues and solutions
+  - [ ] Update procedures
+- [ ] Set up monitoring alerts
+  - [ ] Error rate thresholds
+  - [ ] Performance degradation
+  - [ ] Resource utilization
+- [ ] Plan regular maintenance
+  - [ ] Log rotation
+  - [ ] Security updates
+  - [ ] Performance optimization
+
+---
+
+## Implementation Timeline
+
+### Week 1-2: Foundation
+- Complete Phase 1 (Project Setup)
+- Complete Phase 2 (Core Infrastructure)
+
+### Week 3-4: Core Development
+- Complete Phase 3 (Puppeteer Automation)
+- Complete Phase 4 (CSV Processing)
+
+### Week 5-6: API Development
+- Complete Phase 5 (API Controllers)
+- Complete Phase 6 (Error Handling)
+
+### Week 7-8: Documentation & Quality
+- Complete Phase 7 (Documentation & Deployment)
+- Complete Phase 8 (Quality Assurance & Optimization)
+
+### Week 9: Production Readiness
+- Complete Phase 9 (Production Readiness)
+
+---
+
+## Success Criteria
+
+### Technical Requirements
+- [ ] All API endpoints functional and documented
+- [ ] Puppeteer automation working reliably
+- [ ] CSV processing handling all data formats
+- [ ] Error handling covering all scenarios
+
+### Quality Requirements
+- [ ] Code follows clean code principles
+- [ ] All linting rules passing
+- [ ] Security vulnerabilities addressed
+- [ ] Performance meets requirements
+- [ ] Documentation complete and accurate
+
+### Operational Requirements
+- [ ] Production deployment successful
+- [ ] Monitoring and alerting configured
+- [ ] Maintenance procedures documented
+- [ ] Backup and recovery tested
+- [ ] Team training completed
 
 ---
 
