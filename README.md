@@ -1,1 +1,1 @@
-"# Loyverse-Automation-API" 
+# Loyverse-Automation-API
