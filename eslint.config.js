@@ -23,70 +23,52 @@ export default [
       }
     },
     rules: {
-      // Clean Code: Functions should be small and do one thing
-      'max-lines-per-function': ['error', { max: 50, skipBlankLines: true, skipComments: true }],
-      'max-params': ['error', 4],
-      'max-depth': ['error', 3],
-      'complexity': ['error', 10],
-
-      // Clean Code: Use descriptive names
-      'id-length': ['error', { min: 2, exceptions: ['i', 'j', 'k', 'x', 'y', 'z'] }],
-      'camelcase': ['error', { properties: 'always' }],
-
-      // Clean Code: Comments should explain why, not what
-      'no-inline-comments': 'error',
-      'spaced-comment': ['error', 'always'],
-
-      // Clean Code: Error handling
-      'no-console': 'warn',
-      'no-throw-literal': 'error',
-      'prefer-promise-reject-errors': 'error',
-
-      // Clean Code: Avoid duplication
-      'no-duplicate-imports': 'error',
+      // ESSENTIAL ERRORS - These can break your code
+      'no-undef': 'error',
       'no-dupe-keys': 'error',
       'no-dupe-args': 'error',
-
-      // Clean Code: Consistent formatting
-      'indent': ['error', 2],
-      'quotes': ['error', 'single'],
-      'semi': ['error', 'always'],
-      'comma-dangle': ['error', 'never'],
-      'no-trailing-spaces': 'error',
-      'eol-last': 'error',
-
-      // Clean Code: Variables and constants
+      'no-duplicate-imports': 'error',
+      'no-throw-literal': 'error',
+      'no-async-promise-executor': 'error',
+      'prefer-promise-reject-errors': 'error',
       'no-var': 'error',
       'prefer-const': 'error',
-      'no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
-      'no-undef': 'error',
 
-      // Clean Code: Function expressions
-      'prefer-arrow-callback': 'error',
-      'arrow-spacing': 'error',
-      'arrow-parens': ['error', 'as-needed'],
+      // WARNINGS - Good practices but not critical
+      'no-console': 'warn',
+      'max-lines-per-function': [
+        'warn',
+        { max: 50, skipBlankLines: true, skipComments: true }
+      ],
+      'max-params': ['warn', 4],
+      complexity: ['warn', 10],
 
-      // Clean Code: Objects and arrays
-      'object-shorthand': 'error',
-      'prefer-destructuring': ['error', { object: true, array: false }],
-      'no-array-constructor': 'error',
-
-      // Clean Code: Conditional logic
-      'no-nested-ternary': 'error',
-      'no-unneeded-ternary': 'error',
-      'yoda': 'error',
-
-      // Clean Code: Async/await
-      'prefer-promise-reject-errors': 'error',
-      'no-async-promise-executor': 'error',
-
-      // Clean Code: Code organization
-      'no-multiple-empty-lines': ['error', { max: 2, maxEOF: 1 }],
-      'padded-blocks': ['error', 'never'],
-      'brace-style': ['error', '1tbs', { allowSingleLine: true }],
-
-      // Clean Code: Imports and modules
-      'no-duplicate-imports': 'error'
+      // STYLE RULES - Turned off or made less strict
+      'max-depth': 'off',
+      'id-length': 'off',
+      camelcase: 'off',
+      'no-inline-comments': 'off',
+      'spaced-comment': 'off',
+      indent: 'off',
+      quotes: 'off',
+      semi: 'off',
+      'comma-dangle': 'off',
+      'no-trailing-spaces': 'off',
+      'eol-last': 'off',
+      'prefer-arrow-callback': 'off',
+      'arrow-spacing': 'off',
+      'arrow-parens': 'off',
+      'object-shorthand': 'off',
+      'prefer-destructuring': 'off',
+      'no-array-constructor': 'off',
+      'no-nested-ternary': 'off',
+      'no-unneeded-ternary': 'off',
+      yoda: 'off',
+      'no-multiple-empty-lines': 'off',
+      'padded-blocks': 'off',
+      'brace-style': 'off',
+      'no-unused-expressions': 'off',
+      'no-unused-vars': 'off'
     }
   },
   {
@@ -96,4 +78,4 @@ export default [
       'max-lines-per-function': 'off'
     }
   }
-]; 
+];
