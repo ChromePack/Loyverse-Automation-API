@@ -144,15 +144,26 @@ const RETRY_CONFIG = {
  * Puppeteer selectors for automation
  */
 const SELECTORS = {
-  // Login page selectors
+  // Loyverse login page selectors (based on actual DOM structure)
   LOGIN: {
-    USERNAME_INPUT: 'input[name="username"], input[type="email"]',
-    PASSWORD_INPUT: 'input[name="password"], input[type="password"]',
-    LOGIN_BUTTON: 'button[type="submit"], input[type="submit"]',
-    ERROR_MESSAGE: '.error-message, .alert-danger, .text-danger'
+    EMAIL_INPUT: 'input[formcontrolname="username"]',
+    PASSWORD_INPUT: 'input[formcontrolname="password"]',
+    LOGIN_BUTTON: 'button[type="submit"]',
+    REMEMBER_ME_CHECKBOX: 'input[type="checkbox"]',
+    ERROR_MESSAGE: '.form-error.login-error',
+    LOGIN_FORM: 'form[name="loginForm"]',
+    LOADING_INDICATOR: '.mat-spinner, .loading, [data-loading]'
   },
 
-  // Navigation selectors
+  // Dashboard and authentication verification selectors
+  DASHBOARD: {
+    INDICATOR: '[data-testid="dashboard"], .dashboard, .main-content',
+    USER_MENU: '.user-menu, .profile-menu',
+    LOGOUT_BUTTON:
+      '[data-testid="logout"], button[title="Logout"], .logout-button, .user-menu .logout'
+  },
+
+  // Navigation selectors for reports
   NAVIGATION: {
     REPORTS_MENU: 'nav a[href*="reports"], .nav-item:contains("Reports")',
     SALES_BY_ITEM:

@@ -1,5 +1,6 @@
 const { Logger } = require('../utils/logger');
 const config = require('../config');
+const { SELECTORS } = require('../constants');
 
 /**
  * AuthService - Handles Loyverse POS authentication
@@ -11,26 +12,6 @@ class AuthService {
     this.isAuthenticated = false;
     this.loginUrl = 'https://loyverse.com/en/login';
     this.dashboardUrl = 'https://r.loyverse.com';
-
-    // Element selectors based on the provided DOM structure
-    this.selectors = {
-      // Login form elements
-      emailInput: 'input[formcontrolname="username"]',
-      passwordInput: 'input[formcontrolname="password"]',
-      loginButton: 'button[type="submit"]',
-      rememberMeCheckbox: 'input[type="checkbox"]',
-
-      // Error and success indicators
-      errorMessage: '.form-error.login-error',
-      loginForm: 'form[name="loginForm"]',
-
-      // Dashboard indicators (after successful login)
-      dashboardIndicator:
-        '[data-testid="dashboard"], .dashboard, .main-content',
-
-      // Loading indicators
-      loadingIndicator: '.mat-spinner, .loading, [data-loading]'
-    };
   }
 
   /**
@@ -89,7 +70,7 @@ class AuthService {
       });
 
       // Wait for login form to be visible
-      await page.waitForSelector(this.selectors.loginForm, {
+      await page.waitForSelector(SELECTORS.LOGIN.LOGIN_FORM, {
         visible: true,
         timeout: config.timeouts.navigation
       });
@@ -113,35 +94,35 @@ class AuthService {
       Logger.info('Filling login form with credentials');
 
       // Wait for email input to be visible
-      await page.waitForSelector(this.selectors.emailInput, {
+      await page.waitForSelector(SELECTORS.LOGIN.EMAIL_INPUT, {
         visible: true,
         timeout: config.timeouts.navigation
       });
 
       // Clear and fill email field
-      await page.click(this.selectors.emailInput);
+      await page.click(SELECTORS.LOGIN.EMAIL_INPUT);
       await page.keyboard.down('Control');
       await page.keyboard.press('KeyA');
       await page.keyboard.up('Control');
-      await page.type(this.selectors.emailInput, config.loyverse.username);
+      await page.type(SELECTORS.LOGIN.EMAIL_INPUT, config.loyverse.username);
 
       // Wait for password input to be visible
-      await page.waitForSelector(this.selectors.passwordInput, {
+      await page.waitForSelector(SELECTORS.LOGIN.PASSWORD_INPUT, {
         visible: true,
         timeout: config.timeouts.navigation
       });
 
       // Clear and fill password field
-      await page.click(this.selectors.passwordInput);
+      await page.click(SELECTORS.LOGIN.PASSWORD_INPUT);
       await page.keyboard.down('Control');
       await page.keyboard.press('KeyA');
       await page.keyboard.up('Control');
-      await page.type(this.selectors.passwordInput, config.loyverse.password);
+      await page.type(SELECTORS.LOGIN.PASSWORD_INPUT, config.loyverse.password);
 
       // Optional: Check remember me checkbox
       try {
         const rememberMeCheckbox = await page.$(
-          this.selectors.rememberMeCheckbox
+          SELECTORS.LOGIN.REMEMBER_ME_CHECKBOX
         );
         if (rememberMeCheckbox) {
           const isChecked = await page.evaluate(
@@ -149,7 +130,7 @@ class AuthService {
             rememberMeCheckbox
           );
           if (!isChecked) {
-            await page.click(this.selectors.rememberMeCheckbox);
+            await page.click(SELECTORS.LOGIN.REMEMBER_ME_CHECKBOX);
           }
         }
       } catch (checkboxError) {
@@ -173,7 +154,7 @@ class AuthService {
       Logger.info('Submitting login form');
 
       // Click login button
-      await page.click(this.selectors.loginButton);
+      await page.click(SELECTORS.LOGIN.LOGIN_BUTTON);
 
       // Wait for either success (redirect) or error message
       const result = await Promise.race([
@@ -218,7 +199,7 @@ class AuthService {
 
       // If we're still on login page, check for dashboard indicators
       try {
-        await page.waitForSelector(this.selectors.dashboardIndicator, {
+        await page.waitForSelector(SELECTORS.DASHBOARD.INDICATOR, {
           visible: true,
           timeout: 5000
         });
@@ -244,7 +225,7 @@ class AuthService {
    */
   async waitForLoginError(page) {
     try {
-      await page.waitForSelector(this.selectors.errorMessage, {
+      await page.waitForSelector(SELECTORS.LOGIN.ERROR_MESSAGE, {
         visible: true,
         timeout: config.timeouts.navigation
       });
@@ -252,7 +233,7 @@ class AuthService {
       const errorText = await page.evaluate(selector => {
         const element = document.querySelector(selector); // eslint-disable-line no-undef
         return element ? element.textContent.trim() : 'Unknown error';
-      }, this.selectors.errorMessage);
+      }, SELECTORS.LOGIN.ERROR_MESSAGE);
 
       Logger.error('Login failed with error', { error: errorText });
       return { success: false, message: errorText };
@@ -280,7 +261,7 @@ class AuthService {
 
       // Check for dashboard elements
       try {
-        await page.waitForSelector(this.selectors.dashboardIndicator, {
+        await page.waitForSelector(SELECTORS.DASHBOARD.INDICATOR, {
           visible: true,
           timeout: 5000
         });
@@ -337,12 +318,7 @@ class AuthService {
       Logger.info('Logging out from Loyverse');
 
       // Look for logout button or menu
-      const logoutSelectors = [
-        '[data-testid="logout"]',
-        'button[title="Logout"]',
-        '.logout-button',
-        '.user-menu .logout'
-      ];
+      const logoutSelectors = SELECTORS.DASHBOARD.LOGOUT_BUTTON.split(', ');
 
       for (const selector of logoutSelectors) {
         try {
