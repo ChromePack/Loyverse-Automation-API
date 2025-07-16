@@ -15,69 +15,6 @@ class AuthService {
   }
 
   /**
-   * Generate human-like delay between actions
-   * @param {number} min - Minimum delay in milliseconds
-   * @param {number} max - Maximum delay in milliseconds
-   * @returns {Promise<void>}
-   */
-  async humanLikeDelay(min = 100, max = 300) {
-    const delay = Math.random() * (max - min) + min;
-    await new Promise(resolve => setTimeout(resolve, delay));
-  }
-
-  /**
-   * Type text in a human-like manner with random delays
-   * @param {Page} page - Puppeteer page instance
-   * @param {string} selector - Element selector
-   * @param {string} text - Text to type
-   * @returns {Promise<void>}
-   */
-  async humanLikeTyping(page, selector, text) {
-    await page.click(selector);
-    await this.humanLikeDelay(200, 500);
-    
-    // Clear existing text
-    await page.keyboard.down('Control');
-    await page.keyboard.press('KeyA');
-    await page.keyboard.up('Control');
-    await this.humanLikeDelay(50, 100);
-    
-    // Type each character with random delays
-    for (const char of text) {
-      await page.keyboard.type(char);
-      await this.humanLikeDelay(50, 150);
-    }
-    
-    await this.humanLikeDelay(100, 200);
-  }
-
-  /**
-   * Move mouse in a human-like pattern before clicking
-   * @param {Page} page - Puppeteer page instance
-   * @param {string} selector - Element selector
-   * @returns {Promise<void>}
-   */
-  async humanLikeClick(page, selector) {
-    const element = await page.$(selector);
-    if (element) {
-      const box = await element.boundingBox();
-      if (box) {
-        // Move mouse to a random position within the element
-        const x = box.x + Math.random() * box.width;
-        const y = box.y + Math.random() * box.height;
-        
-        await page.mouse.move(x, y);
-        await this.humanLikeDelay(100, 200);
-        await page.mouse.click(x, y);
-      } else {
-        // Fallback to regular click
-        await page.click(selector);
-      }
-    }
-    await this.humanLikeDelay(200, 400);
-  }
-
-  /**
    * Authenticate user with Loyverse POS
    * @param {string} pageId - Page identifier for browser service
    * @returns {Promise<boolean>} True if authentication successful
@@ -152,53 +89,55 @@ class AuthService {
    * @param {Page} page - Puppeteer page instance
    * @returns {Promise<void>}
    */
-  /**
-   * Fill login form with credentials using human-like behavior
-   * @param {Page} page - Puppeteer page instance
-   * @returns {Promise<void>}
-   */
   async fillLoginForm(page) {
     try {
-      Logger.info('Filling login form with credentials using human-like behavior');
+      Logger.info('Filling login form with credentials');
 
-      // Wait for email input to be visible with human-like delay
+      // Wait for email input to be visible
       await page.waitForSelector(SELECTORS.LOGIN.EMAIL_INPUT, {
         visible: true,
         timeout: config.timeouts.navigation
       });
-      await this.humanLikeDelay(300, 600);
 
-      // Fill email field with human-like typing
-      await this.humanLikeTyping(page, SELECTORS.LOGIN.EMAIL_INPUT, config.loyverse.username);
+      // Clear and fill email field
+      await page.click(SELECTORS.LOGIN.EMAIL_INPUT);
+      await page.keyboard.down('Control');
+      await page.keyboard.press('KeyA');
+      await page.keyboard.up('Control');
+      await page.type(SELECTORS.LOGIN.EMAIL_INPUT, config.loyverse.username);
 
-      // Wait for password input to be visible with human-like delay
+      // Wait for password input to be visible
       await page.waitForSelector(SELECTORS.LOGIN.PASSWORD_INPUT, {
         visible: true,
         timeout: config.timeouts.navigation
       });
-      await this.humanLikeDelay(200, 400);
 
-      // Fill password field with human-like typing
-      await this.humanLikeTyping(page, SELECTORS.LOGIN.PASSWORD_INPUT, config.loyverse.password);
+      // Clear and fill password field
+      await page.click(SELECTORS.LOGIN.PASSWORD_INPUT);
+      await page.keyboard.down('Control');
+      await page.keyboard.press('KeyA');
+      await page.keyboard.up('Control');
+      await page.type(SELECTORS.LOGIN.PASSWORD_INPUT, config.loyverse.password);
 
-      // Optional: Check remember me checkbox with human-like behavior
+      // Optional: Check remember me checkbox
       try {
-        const rememberMeCheckbox = await page.$(SELECTORS.LOGIN.REMEMBER_ME_CHECKBOX);
+        const rememberMeCheckbox = await page.$(
+          SELECTORS.LOGIN.REMEMBER_ME_CHECKBOX
+        );
         if (rememberMeCheckbox) {
           const isChecked = await page.evaluate(
             checkbox => checkbox.checked,
             rememberMeCheckbox
           );
           if (!isChecked) {
-            await this.humanLikeDelay(300, 500);
-            await this.humanLikeClick(page, SELECTORS.LOGIN.REMEMBER_ME_CHECKBOX);
+            await page.click(SELECTORS.LOGIN.REMEMBER_ME_CHECKBOX);
           }
         }
       } catch (checkboxError) {
         Logger.debug('Remember me checkbox not found or already checked');
       }
 
-      Logger.info('Login form filled successfully with human-like behavior');
+      Logger.info('Login form filled successfully');
     } catch (error) {
       Logger.error('Failed to fill login form', { error: error.message });
       throw new Error(`Form filling failed: ${error.message}`);
@@ -215,7 +154,7 @@ class AuthService {
       Logger.info('Submitting login form');
 
       // Click login button
-      await this.humanLikeClick(page, SELECTORS.LOGIN.LOGIN_BUTTON);
+      await page.click(SELECTORS.LOGIN.LOGIN_BUTTON);
 
       // Wait for either success (redirect) or error message
       const result = await Promise.race([

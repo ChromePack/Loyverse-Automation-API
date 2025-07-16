@@ -49,7 +49,7 @@ class Config {
   }
 
   /**
-   * Enhanced Puppeteer configuration with anti-detection measures
+   * Puppeteer configuration
    */
   get puppeteer() {
     return {
@@ -65,69 +65,12 @@ class Config {
           '--disable-accelerated-2d-canvas',
           '--no-first-run',
           '--no-zygote',
-          '--disable-gpu',
-          // Enhanced anti-detection arguments to avoid CAPTCHA
-          '--disable-blink-features=AutomationControlled',
-          '--disable-features=VizDisplayCompositor',
-          '--disable-web-security',
-          '--disable-features=site-per-process',
-          '--disable-background-networking',
-          '--disable-background-timer-throttling',
-          '--disable-renderer-backgrounding',
-          '--disable-backgrounding-occluded-windows',
-          '--disable-client-side-phishing-detection',
-          '--disable-sync',
-          '--disable-default-apps',
-          '--disable-extensions',
-          '--disable-plugins',
-          '--disable-hang-monitor',
-          '--disable-popup-blocking',
-          '--disable-prompt-on-repost',
-          '--disable-domain-reliability',
-          '--disable-component-update',
-          '--disable-ipc-flooding-protection',
-          '--no-default-browser-check',
-          '--no-pings',
-          '--password-store=basic',
-          '--use-mock-keychain',
-          '--disable-component-extensions-with-background-pages',
-          '--disable-default-apps',
-          '--disable-extensions',
-          '--mute-audio',
-          '--no-default-browser-check',
-          '--no-first-run',
-          '--disable-background-mode',
-          '--disable-background-networking',
-          '--disable-background-timer-throttling',
-          '--disable-backgrounding-occluded-windows',
-          '--disable-breakpad',
-          '--disable-client-side-phishing-detection',
-          '--disable-component-update',
-          '--disable-default-apps',
-          '--disable-domain-reliability',
-          '--disable-extensions',
-          '--disable-features=TranslateUI',
-          '--disable-hang-monitor',
-          '--disable-ipc-flooding-protection',
-          '--disable-popup-blocking',
-          '--disable-prompt-on-repost',
-          '--disable-renderer-backgrounding',
-          '--disable-sync',
-          '--disable-translate',
-          '--metrics-recording-only',
-          '--no-first-run',
-          '--no-default-browser-check',
-          '--no-pings',
-          '--password-store=basic',
-          '--use-mock-keychain'
+          '--disable-gpu'
         ],
         defaultViewport: {
           width: 1920,
           height: 1080
-        },
-        ignoreDefaultArgs: ['--enable-automation'],
-        ignoreHTTPSErrors: true,
-        slowMo: 50 // Add slight delay between actions to appear more human-like
+        }
       }
     };
   }
