@@ -141,7 +141,7 @@ const RETRY_CONFIG = {
 };
 
 /**
- * Puppeteer selectors for automation
+ * Puppeteer selectors for automation - Updated with actual Loyverse DOM structure
  */
 const SELECTORS = {
   // Loyverse login page selectors (based on actual DOM structure)
@@ -163,21 +163,113 @@ const SELECTORS = {
       '[data-testid="logout"], button[title="Logout"], .logout-button, .user-menu .logout'
   },
 
-  // Navigation selectors for reports
+  // Sales report page selectors (based on actual DOM structure)
+  SALES_REPORT: {
+    // Store/Outlet filter selectors
+    STORE_FILTER_BUTTON:
+      '#firstDrop button, .reportFilters button[id="dropdownMenu1"]',
+    STORE_FILTER_MENU:
+      '#menu_container_10 md-menu-content, .md-menu-content-filter',
+    ALL_STORES_CHECKBOX:
+      'md-checkbox[aria-label="All stores"], .listCheckbox md-checkbox:first-child',
+    STORE_CHECKBOX_BY_LABEL: storeName =>
+      `md-checkbox[aria-label="${storeName}"]`,
+    STORE_CHECKBOX_BY_ID: storeId =>
+      `.listCheckbox[id="${storeId}"] md-checkbox`,
+
+    // Employee filter selectors
+    EMPLOYEE_FILTER_BUTTON:
+      '#secondDrop button, .reportFilters button[id="merchants_filter-dropdown-button"]',
+    EMPLOYEE_FILTER_MENU:
+      '#menu_container_7 md-menu-content, .md-menu-content-filter',
+    ALL_EMPLOYEES_CHECKBOX:
+      'md-checkbox[aria-label="All employees"], #merchants_filter-all_merchants-checkbox',
+
+    // Export functionality
+    EXPORT_BUTTON: '#export-button, .export-button, button.impExpBtn',
+    EXPORT_LOADING: '.export-loading, .md-progress-circular',
+
+    // Page elements
+    FILTERS_CONTAINER: '#filters, .filters',
+    REPORT_CONTAINER: '.report-container, .report-content',
+    LOADING_INDICATOR: '.loading, .md-progress-circular, .spinner'
+  },
+
+  // Navigation selectors for reports (fallback if direct URL navigation fails)
   NAVIGATION: {
     REPORTS_MENU: 'nav a[href*="reports"], .nav-item:contains("Reports")',
     SALES_BY_ITEM:
-      'a[href*="sales-by-item"], .menu-item:contains("Sales by Item")'
+      'a[href*="sales-by-item"], .menu-item:contains("Sales by Item")',
+    SALES_SUMMARY: 'a[href*="sales"], .menu-item:contains("Sales")'
   },
 
-  // Report page selectors
-  REPORT: {
-    STORE_DROPDOWN: 'select[name="store"], .store-selector',
-    DATE_PICKER: 'input[type="date"], .date-picker',
-    EXPORT_BUTTON:
-      'button:contains("Export"), .export-btn, button[title*="export"]',
-    DOWNLOAD_LINK: 'a[href*=".csv"], .download-link'
+  // General page selectors
+  GENERAL: {
+    PAGE_LOADER: '.page-loader, .loading-overlay, .md-progress-circular',
+    ERROR_MESSAGE: '.error-message, .alert-danger, .md-toast',
+    SUCCESS_MESSAGE: '.success-message, .alert-success, .md-toast'
   }
+};
+
+/**
+ * Loyverse specific URLs and endpoints
+ */
+const LOYVERSE_URLS = {
+  BASE_URL: 'https://r.loyverse.com',
+  LOGIN_URL: 'https://loyverse.com/en/login',
+  DASHBOARD_URL: 'https://r.loyverse.com/dashboard',
+  SALES_REPORT_BASE: 'https://r.loyverse.com/dashboard/#/report/sales',
+
+  // Sales report URL with default parameters
+  SALES_REPORT_URL: (params = {}) => {
+    const defaultParams = {
+      page: 0,
+      limit: 10,
+      group: 'hour',
+      serverChartType: 'saleSum',
+      periodName: 'day',
+      periodLength: '1d',
+      arg: 0,
+      fromHour: 0,
+      toHour: 0,
+      outletsIds: 'all',
+      merchantsIds: 'all'
+    };
+
+    const mergedParams = { ...defaultParams, ...params };
+    const queryString = Object.entries(mergedParams)
+      .map(([key, value]) => `${key}=${encodeURIComponent(value)}`)
+      .join('&');
+
+    return `${LOYVERSE_URLS.SALES_REPORT_BASE}?${queryString}`;
+  }
+};
+
+/**
+ * Store configuration - Updated with actual store names from DOM
+ */
+const STORE_CONFIG = {
+  STORE_NAMES: [
+    'Apung Iska - MAT',
+    'Apung Iska - MG',
+    'Apung Iska - Main',
+    'Apung Iska - SV',
+    'Capas',
+    'Central-K'
+  ],
+
+  // Store IDs from DOM (for checkbox selection)
+  STORE_IDS: {
+    'Apung Iska - MAT': '1853035',
+    'Apung Iska - MG': '171895',
+    'Apung Iska - Main': '1271966',
+    'Apung Iska - SV': '1271967',
+    Capas: '2770518',
+    'Central-K': '2640464'
+  },
+
+  DEFAULT_STORE: 'Apung Iska - MAT',
+  ALL_STORES_OPTION: 'All stores'
 };
 
 /**
@@ -200,7 +292,8 @@ const DATE_FORMATS = {
   API_DATE_FORMAT: 'YYYY-MM-DD',
   DISPLAY_DATE_FORMAT: 'DD/MM/YYYY',
   TIMESTAMP_FORMAT: 'YYYY-MM-DD HH:mm:ss',
-  ISO_FORMAT: 'YYYY-MM-DDTHH:mm:ss.sssZ'
+  ISO_FORMAT: 'YYYY-MM-DDTHH:mm:ss.sssZ',
+  URL_DATE_FORMAT: 'YYYY-MM-DD HH:mm:ss' // For URL parameters
 };
 
 /**
@@ -255,6 +348,8 @@ module.exports = {
   TIMEOUTS,
   RETRY_CONFIG,
   SELECTORS,
+  LOYVERSE_URLS,
+  STORE_CONFIG,
   FILE_SYSTEM,
   DATE_FORMATS,
   VALIDATION,
