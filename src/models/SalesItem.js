@@ -288,6 +288,39 @@ class SalesItem {
       !isNaN(date.getTime()) && date.toISOString().split('T')[0] === dateString
     );
   }
+
+  /**
+   * Create SalesItem from CSV data
+   * @param {Object} csvData - Raw CSV data
+   * @param {string} storeName - Store name
+   * @param {string} date - Date of sale
+   * @returns {SalesItem} New SalesItem instance
+   */
+  static fromCsvData(csvData, storeName, date) {
+    return new SalesItem({
+      date_sold: date,
+      store_branch: storeName,
+      item_name: csvData['Item Name'] || csvData.itemName || '',
+      category: csvData['Category'] || csvData.category || '',
+      items_sold: parseInt(csvData['Items Sold'] || csvData.itemsSold || 0),
+      gross_sales: parseFloat(csvData['Gross Sales'] || csvData.grossSales || 0)
+    });
+  }
+
+  /**
+   * Convert SalesItem to API format
+   * @returns {Object} API formatted object
+   */
+  toApiFormat() {
+    return {
+      date_sold: this.date_sold,
+      store_branch: this.store_branch,
+      item_name: this.item_name,
+      category: this.category,
+      items_sold: this.items_sold,
+      gross_sales: this.gross_sales
+    };
+  }
 }
 
 module.exports = {

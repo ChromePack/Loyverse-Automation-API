@@ -334,6 +334,40 @@ class DateUtils {
       return NaN;
     }
   }
+
+  /**
+   * Get current date in API format (YYYY-MM-DD)
+   * @returns {string} Current date in API format
+   */
+  static getCurrentDate() {
+    return this.formatToApiDate(new Date());
+  }
+
+  /**
+   * Validate if a date string is in valid format (YYYY-MM-DD)
+   * @param {string} dateString - Date string to validate
+   * @returns {boolean} True if valid, false otherwise
+   */
+  static isValidDate(dateString) {
+    if (!dateString || typeof dateString !== 'string') {
+      return false;
+    }
+
+    // Check format with regex
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+    if (!dateRegex.test(dateString)) {
+      return false;
+    }
+
+    // Check if it's a valid date
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) {
+      return false;
+    }
+
+    // Check if the date string matches the parsed date
+    return dateString === this.formatToApiDate(date);
+  }
 }
 
 module.exports = {

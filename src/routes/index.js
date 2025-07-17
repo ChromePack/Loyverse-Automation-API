@@ -8,7 +8,9 @@ const router = express.Router();
 
 // Request logging middleware for API routes
 router.use((req, res, next) => {
-  console.log(`[${req.requestId}] API Request: ${req.method} ${req.originalUrl}`);
+  console.log(
+    `[${req.requestId}] API Request: ${req.method} ${req.originalUrl}`
+  );
   next();
 });
 
@@ -22,17 +24,9 @@ router.get('/health', (req, res) => {
   });
 });
 
-// Placeholder for sales routes (to be implemented in Phase 5)
-router.use('/sales', (req, res) => {
-  res.status(501).json({
-    success: false,
-    error: {
-      code: 'NOT_IMPLEMENTED',
-      message: 'Sales endpoints are not yet implemented',
-      timestamp: new Date().toISOString()
-    }
-  });
-});
+// Sales routes (implemented in Phase 5)
+const salesRoutes = require('./sales');
+router.use('/sales', salesRoutes);
 
 // Placeholder for future routes
 router.use('/stores', (req, res) => {
