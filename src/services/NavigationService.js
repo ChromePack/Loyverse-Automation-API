@@ -209,7 +209,7 @@ class NavigationService {
       );
 
       // Additional wait for Angular to settle
-      await page.waitForTimeout(1000);
+      await new Promise(resolve => setTimeout(resolve, 1000));
 
       this.logger.debug('Page loaded successfully');
     } catch (error) {
@@ -392,7 +392,7 @@ class NavigationService {
       );
 
       // Additional wait for data to update
-      await page.waitForTimeout(2000);
+      await new Promise(resolve => setTimeout(resolve, 2000));
 
       this.logger.debug('Filter update completed');
     } catch (error) {
