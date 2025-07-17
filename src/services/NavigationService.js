@@ -14,7 +14,7 @@ const {
  */
 class NavigationService {
   constructor() {
-    this.logger = new Logger('NavigationService');
+    this.logger = Logger; // Use static Logger methods
   }
 
   /**

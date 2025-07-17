@@ -1,8 +1,19 @@
 const puppeteer = require('puppeteer-extra');
 const StealthPlugin = require('puppeteer-extra-plugin-stealth');
+const RecaptchaPlugin = require('puppeteer-extra-plugin-recaptcha');
 
 // Use stealth plugin to avoid detection
 puppeteer.use(StealthPlugin());
+
+// Use reCAPTCHA plugin for enhanced CAPTCHA handling
+puppeteer.use(RecaptchaPlugin({
+  provider: {
+    id: '2captcha',
+    token: process.env.CAPTCHA_SOLVER_TOKEN || 'MANUAL' // Use 'MANUAL' for manual solving
+  },
+  visualFeedback: true // Show visual feedback during solving
+}));
+
 const fs = require('fs').promises;
 const path = require('path');
 const config = require('../config');

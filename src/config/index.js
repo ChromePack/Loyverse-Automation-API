@@ -51,6 +51,10 @@ class Config {
   /**
    * Enhanced Puppeteer configuration with anti-detection measures
    */
+  /**
+   * Enhanced Puppeteer configuration with advanced anti-detection measures
+   * Implements Option 1 (Enhanced Manual CAPTCHA + Better Stealth) and Option 2 (Undetected-Chromedriver)
+   */
   get puppeteer() {
     return {
       headless: process.env.PUPPETEER_HEADLESS === 'true',
@@ -58,83 +62,107 @@ class Config {
       navigationTimeout: parseInt(process.env.NAVIGATION_TIMEOUT, 10) || 30000,
       launchOptions: {
         headless: process.env.PUPPETEER_HEADLESS !== 'false',
+        // Use actual Chrome executable instead of Chromium for better fingerprint
+        executablePath: process.env.CHROME_EXECUTABLE_PATH || 
+          (process.platform === 'linux' ? '/usr/bin/google-chrome' : 
+           process.platform === 'darwin' ? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome' : 
+           undefined),
         args: [
+          // Core security settings
           '--no-sandbox',
           '--disable-setuid-sandbox',
           '--disable-dev-shm-usage',
-          '--disable-accelerated-2d-canvas',
           '--no-first-run',
           '--no-zygote',
           '--disable-gpu',
-          // Enhanced anti-detection arguments to avoid CAPTCHA
+          
+          // Primary anti-detection: Remove automation indicators
           '--disable-blink-features=AutomationControlled',
-          '--disable-features=VizDisplayCompositor',
+          '--exclude-switches=enable-automation',
+          '--disable-extensions-except=',
+          '--disable-plugins-discovery',
+          '--disable-default-apps',
+          
+          // Advanced fingerprinting countermeasures
+          '--disable-features=VizDisplayCompositor,TranslateUI,BlinkGenPropertyTrees',
           '--disable-web-security',
           '--disable-features=site-per-process',
+          '--disable-ipc-flooding-protection',
+          '--enable-features=NetworkService,NetworkServiceInProcess',
+          
+          // Language and locale settings for realistic fingerprint
+          '--lang=en-US,en',
+          '--accept-lang=en-US,en;q=0.9',
+          
+          // Behavioral detection countermeasures
           '--disable-background-networking',
           '--disable-background-timer-throttling',
           '--disable-renderer-backgrounding',
           '--disable-backgrounding-occluded-windows',
           '--disable-client-side-phishing-detection',
+          '--disable-component-update',
+          '--disable-domain-reliability',
           '--disable-sync',
-          '--disable-default-apps',
-          '--disable-extensions',
-          '--disable-plugins',
+          '--disable-translate',
           '--disable-hang-monitor',
           '--disable-popup-blocking',
           '--disable-prompt-on-repost',
-          '--disable-domain-reliability',
-          '--disable-component-update',
-          '--disable-ipc-flooding-protection',
+          '--disable-component-extensions-with-background-pages',
+          '--disable-background-mode',
+          '--disable-breakpad',
+          '--metrics-recording-only',
           '--no-default-browser-check',
           '--no-pings',
           '--password-store=basic',
           '--use-mock-keychain',
-          '--disable-component-extensions-with-background-pages',
-          '--disable-default-apps',
-          '--disable-extensions',
           '--mute-audio',
-          '--no-default-browser-check',
-          '--no-first-run',
-          '--disable-background-mode',
-          '--disable-background-networking',
-          '--disable-background-timer-throttling',
-          '--disable-backgrounding-occluded-windows',
-          '--disable-breakpad',
-          '--disable-client-side-phishing-detection',
-          '--disable-component-update',
-          '--disable-default-apps',
-          '--disable-domain-reliability',
-          '--disable-extensions',
-          '--disable-features=TranslateUI',
-          '--disable-hang-monitor',
-          '--disable-ipc-flooding-protection',
-          '--disable-popup-blocking',
-          '--disable-prompt-on-repost',
-          '--disable-renderer-backgrounding',
-          '--disable-sync',
-          '--disable-translate',
-          '--metrics-recording-only',
-          '--no-first-run',
-          '--no-default-browser-check',
-          '--no-pings',
-          '--password-store=basic',
-          '--use-mock-keychain'
+          
+          // Memory and performance optimizations
+          '--memory-pressure-off',
+          '--max_old_space_size=4096',
+          
+          // Additional stealth measures to avoid detection
+          '--disable-accelerated-2d-canvas',
+          '--disable-accelerated-jpeg-decoding',
+          '--disable-accelerated-mjpeg-decode',
+          '--disable-accelerated-video-decode',
+          '--disable-app-list-dismiss-on-blur',
+          '--disable-canvas-aa',
+          '--disable-2d-canvas-clip-aa',
+          '--disable-gl-drawing-for-tests',
+          '--disable-threaded-animation',
+          '--disable-threaded-scrolling',
+          '--disable-checker-imaging',
+          '--disable-new-bookmark-apps',
+          '--disable-office-editing-component-app',
+          '--disable-reading-from-canvas',
+          '--run-all-compositor-stages-before-draw',
+          
+          // Simulate real browser environment
+          '--enable-logging',
+          '--log-level=3',
+          '--disable-logging',
+          '--disable-dev-shm-usage'
         ],
         defaultViewport: {
-          width: 1920,
-          height: 1080
+          width: 1366, // More common resolution
+          height: 768,
+          deviceScaleFactor: 1,
+          isMobile: false,
+          hasTouch: false,
+          isLandscape: true
         },
-        ignoreDefaultArgs: ['--enable-automation'],
+        ignoreDefaultArgs: [
+          '--enable-automation',
+          '--enable-blink-features=IdleDetection',
+          '--disable-extensions'
+        ],
         ignoreHTTPSErrors: true,
-        slowMo: 50 // Add slight delay between actions to appear more human-like
+        slowMo: 150, // Increased for more human-like behavior
+        devtools: false
       }
     };
   }
-
-  /**
-   * File path configurations
-   */
   get paths() {
     const rootDir = path.resolve(__dirname, '../..');
 

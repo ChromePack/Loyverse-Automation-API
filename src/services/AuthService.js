@@ -35,19 +35,19 @@ class AuthService {
   async humanLikeTyping(page, selector, text) {
     await page.click(selector);
     await this.humanLikeDelay(200, 500);
-    
+
     // Clear existing text
     await page.keyboard.down('Control');
     await page.keyboard.press('KeyA');
     await page.keyboard.up('Control');
     await this.humanLikeDelay(50, 100);
-    
+
     // Type each character with random delays
     for (const char of text) {
       await page.keyboard.type(char);
       await this.humanLikeDelay(50, 150);
     }
-    
+
     await this.humanLikeDelay(100, 200);
   }
 
@@ -65,7 +65,7 @@ class AuthService {
         // Move mouse to a random position within the element
         const x = box.x + Math.random() * box.width;
         const y = box.y + Math.random() * box.height;
-        
+
         await page.mouse.move(x, y);
         await this.humanLikeDelay(100, 200);
         await page.mouse.click(x, y);
@@ -83,6 +83,177 @@ class AuthService {
    * @returns {Promise<boolean>} True if authentication successful
    * @throws {Error} If authentication fails
    */
+  /**
+   * Apply enhanced anti-detection measures to a page
+   * Implements Option 1 and Option 2 enhancements
+   * @param {Page} page - Puppeteer page instance
+   * @returns {Promise<void>}
+   */
+  async applyEnhancedAntiDetection(page) {
+    try {
+      Logger.info('Applying enhanced anti-detection measures');
+
+      // Set realistic user agent (Chrome instead of HeadlessChrome)
+      const userAgent = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
+      await page.setUserAgent(userAgent);
+
+      // Set realistic viewport
+      await page.setViewport({
+        width: 1366,
+        height: 768,
+        deviceScaleFactor: 1,
+        isMobile: false,
+        hasTouch: false,
+        isLandscape: true
+      });
+
+      // Set realistic headers
+      await page.setExtraHTTPHeaders({
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
+        'Cache-Control': 'max-age=0',
+        'Connection': 'keep-alive',
+        'Upgrade-Insecure-Requests': '1',
+        'Sec-Fetch-Dest': 'document',
+        'Sec-Fetch-Mode': 'navigate',
+        'Sec-Fetch-Site': 'none',
+        'Sec-Fetch-User': '?1'
+      });
+
+      // Inject comprehensive anti-detection scripts
+      await page.evaluateOnNewDocument(() => {
+        // Override webdriver property
+        Object.defineProperty(navigator, 'webdriver', {
+          get: () => false,
+          configurable: true
+        });
+
+        // Override plugins to match real Chrome
+        Object.defineProperty(navigator, 'plugins', {
+          get: () => [
+            {
+              name: 'Chrome PDF Plugin',
+              filename: 'internal-pdf-viewer',
+              description: 'Portable Document Format',
+              length: 1
+            },
+            {
+              name: 'Chrome PDF Viewer',
+              filename: 'mhjfbmdgcfjbbpaeojofohoefgiehjai',
+              description: 'Portable Document Format',
+              length: 1
+            },
+            {
+              name: 'Native Client',
+              filename: 'internal-nacl-plugin',
+              description: 'Native Client',
+              length: 2
+            }
+          ],
+          configurable: true
+        });
+
+        // Override languages to match real user
+        Object.defineProperty(navigator, 'languages', {
+          get: () => ['en-US', 'en'],
+          configurable: true
+        });
+
+        // Override language
+        Object.defineProperty(navigator, 'language', {
+          get: () => 'en-US',
+          configurable: true
+        });
+
+        // Override permissions
+        const originalQuery = window.navigator.permissions.query;
+        window.navigator.permissions.query = (parameters) => (
+          parameters.name === 'notifications' ?
+            Promise.resolve({ state: Notification.permission }) :
+            originalQuery(parameters)
+        );
+
+        // Override chrome object to match real Chrome
+        if (!window.chrome) {
+          window.chrome = {
+            runtime: {},
+            loadTimes: function() {
+              return {
+                commitLoadTime: Date.now() / 1000 - Math.random() * 100,
+                finishDocumentLoadTime: Date.now() / 1000 - Math.random() * 100,
+                finishLoadTime: Date.now() / 1000 - Math.random() * 100,
+                firstPaintAfterLoadTime: 0,
+                firstPaintTime: Date.now() / 1000 - Math.random() * 100,
+                navigationType: 'Other',
+                numTabs: Math.floor(Math.random() * 10) + 1,
+                requestTime: Date.now() / 1000 - Math.random() * 100,
+                startLoadTime: Date.now() / 1000 - Math.random() * 100,
+                wasAlternateProtocolAvailable: false,
+                wasFetchedViaSpdy: false,
+                wasNpnNegotiated: false
+              };
+            },
+            csi: function() {
+              return {
+                pageT: Date.now() / 1000 - Math.random() * 100,
+                startE: Date.now() / 1000 - Math.random() * 100,
+                tran: 15
+              };
+            }
+          };
+        }
+
+        // Add realistic mouse movements
+        let mouseX = Math.random() * window.innerWidth;
+        let mouseY = Math.random() * window.innerHeight;
+        
+        setInterval(() => {
+          mouseX += (Math.random() - 0.5) * 20;
+          mouseY += (Math.random() - 0.5) * 20;
+          
+          // Keep mouse within viewport
+          mouseX = Math.max(0, Math.min(window.innerWidth, mouseX));
+          mouseY = Math.max(0, Math.min(window.innerHeight, mouseY));
+          
+          // Dispatch mouse move event
+          document.dispatchEvent(new MouseEvent('mousemove', {
+            clientX: mouseX,
+            clientY: mouseY,
+            bubbles: true
+          }));
+        }, 2000 + Math.random() * 3000);
+
+        // Override console methods to prevent CDP detection
+        const originalConsole = window.console;
+        const handler = {
+          get(target, propKey, receiver) {
+            if (['debug', 'error', 'info', 'log', 'warn'].includes(propKey)) {
+              return (...args) => {
+                // Silently ignore to prevent CDP detection
+                return undefined;
+              };
+            }
+            return Reflect.get(target, propKey, receiver);
+          }
+        };
+        
+        // Apply proxy only if not already applied
+        if (!window.console._isProxied) {
+          window.console = new Proxy(originalConsole, handler);
+          window.console._isProxied = true;
+        }
+      });
+
+      Logger.info('Enhanced anti-detection measures applied successfully');
+    } catch (error) {
+      Logger.error('Failed to apply enhanced anti-detection measures', {
+        error: error.message
+      });
+      // Don't throw error, continue with authentication
+    }
+  }
+
   async authenticate(pageId = 'auth-page') {
     try {
       Logger.info('Starting Loyverse authentication process');
@@ -92,6 +263,9 @@ class AuthService {
       if (!page) {
         page = await this.browserService.createPage(pageId);
       }
+
+      // Apply enhanced anti-detection measures
+      await this.applyEnhancedAntiDetection(page);
 
       // Navigate to login page
       await this.navigateToLogin(page);
@@ -159,7 +333,9 @@ class AuthService {
    */
   async fillLoginForm(page) {
     try {
-      Logger.info('Filling login form with credentials using human-like behavior');
+      Logger.info(
+        'Filling login form with credentials using human-like behavior'
+      );
 
       // Wait for email input to be visible with human-like delay
       await page.waitForSelector(SELECTORS.LOGIN.EMAIL_INPUT, {
@@ -169,7 +345,11 @@ class AuthService {
       await this.humanLikeDelay(300, 600);
 
       // Fill email field with human-like typing
-      await this.humanLikeTyping(page, SELECTORS.LOGIN.EMAIL_INPUT, config.loyverse.username);
+      await this.humanLikeTyping(
+        page,
+        SELECTORS.LOGIN.EMAIL_INPUT,
+        config.loyverse.username
+      );
 
       // Wait for password input to be visible with human-like delay
       await page.waitForSelector(SELECTORS.LOGIN.PASSWORD_INPUT, {
@@ -179,11 +359,17 @@ class AuthService {
       await this.humanLikeDelay(200, 400);
 
       // Fill password field with human-like typing
-      await this.humanLikeTyping(page, SELECTORS.LOGIN.PASSWORD_INPUT, config.loyverse.password);
+      await this.humanLikeTyping(
+        page,
+        SELECTORS.LOGIN.PASSWORD_INPUT,
+        config.loyverse.password
+      );
 
       // Optional: Check remember me checkbox with human-like behavior
       try {
-        const rememberMeCheckbox = await page.$(SELECTORS.LOGIN.REMEMBER_ME_CHECKBOX);
+        const rememberMeCheckbox = await page.$(
+          SELECTORS.LOGIN.REMEMBER_ME_CHECKBOX
+        );
         if (rememberMeCheckbox) {
           const isChecked = await page.evaluate(
             checkbox => checkbox.checked,
@@ -191,7 +377,10 @@ class AuthService {
           );
           if (!isChecked) {
             await this.humanLikeDelay(300, 500);
-            await this.humanLikeClick(page, SELECTORS.LOGIN.REMEMBER_ME_CHECKBOX);
+            await this.humanLikeClick(
+              page,
+              SELECTORS.LOGIN.REMEMBER_ME_CHECKBOX
+            );
           }
         }
       } catch (checkboxError) {
@@ -217,6 +406,23 @@ class AuthService {
       // Click login button
       await this.humanLikeClick(page, SELECTORS.LOGIN.LOGIN_BUTTON);
 
+      // Check for CAPTCHA immediately after clicking login
+      const captchaDetected = await this.detectCaptcha(page);
+      if (captchaDetected) {
+        Logger.warn(
+          'CAPTCHA detected! Waiting 60 seconds (1 minute) for manual solving...'
+        );
+        console.log(
+          '\n🤖 CAPTCHA DETECTED! Please solve it manually in the browser.'
+        );
+        console.log('⏰ Waiting 60 seconds (1 minute) for you to solve the CAPTCHA...\n');
+
+        // Wait 30 seconds for manual CAPTCHA solving
+        await this.waitForManualCaptchaSolving(page);
+
+        Logger.info('Resuming after CAPTCHA wait period');
+      }
+
       // Wait for either success (redirect) or error message
       const result = await Promise.race([
         this.waitForLoginSuccess(page),
@@ -228,6 +434,102 @@ class AuthService {
       Logger.error('Failed to submit login form', { error: error.message });
       throw new Error(`Form submission failed: ${error.message}`);
     }
+  }
+
+  /**
+   * Detect if CAPTCHA is present on the page
+   * @param {Page} page - Puppeteer page instance
+   * @returns {Promise<boolean>} True if CAPTCHA is detected
+   */
+  async detectCaptcha(page) {
+    try {
+      // Common CAPTCHA selectors
+      const captchaSelectors = [
+        '.g-recaptcha', // Google reCAPTCHA
+        '#captcha', // Generic CAPTCHA
+        '.captcha', // Generic CAPTCHA class
+        'iframe[src*="recaptcha"]', // reCAPTCHA iframe
+        'iframe[title*="recaptcha"]', // reCAPTCHA iframe with title
+        '.recaptcha-checkbox', // reCAPTCHA checkbox
+        '.h-captcha', // hCaptcha
+        '.cf-turnstile', // Cloudflare Turnstile
+        '[data-sitekey]' // Any element with data-sitekey (common for CAPTCHAs)
+      ];
+
+      for (const selector of captchaSelectors) {
+        try {
+          const element = await page.$(selector);
+          if (element) {
+            // Check if element is visible
+            const isVisible = await page.evaluate(el => {
+              const style = window.getComputedStyle(el); // eslint-disable-line no-undef
+              return (
+                style.display !== 'none' &&
+                style.visibility !== 'hidden' &&
+                style.opacity !== '0'
+              );
+            }, element);
+
+            if (isVisible) {
+              Logger.info(`CAPTCHA detected with selector: ${selector}`);
+              return true;
+            }
+          }
+        } catch (selectorError) {
+          // Continue checking other selectors
+          Logger.debug(`CAPTCHA selector not found: ${selector}`);
+        }
+      }
+
+      // Additional check for reCAPTCHA iframe content
+      try {
+        const frames = await page.frames();
+        for (const frame of frames) {
+          const frameUrl = frame.url();
+          if (frameUrl.includes('recaptcha') || frameUrl.includes('captcha')) {
+            Logger.info(`CAPTCHA detected in iframe: ${frameUrl}`);
+            return true;
+          }
+        }
+      } catch (frameError) {
+        Logger.debug('Error checking frames for CAPTCHA', {
+          error: frameError.message
+        });
+      }
+
+      return false;
+    } catch (error) {
+      Logger.error('Error detecting CAPTCHA', { error: error.message });
+      return false;
+    }
+  }
+
+  /**
+   * Wait for manual CAPTCHA solving with countdown
+   * @param {Page} page - Puppeteer page instance
+   * @returns {Promise<void>}
+   */
+  async waitForManualCaptchaSolving(page) {
+    const waitTime = 60; // 60 seconds (1 minute)
+    const interval = 1000; // 1 second intervals
+
+    for (let i = waitTime; i > 0; i--) {
+      process.stdout.write(`\r⏳ Time remaining: ${i} seconds... `);
+      await new Promise(resolve => setTimeout(resolve, interval));
+
+      // Check if CAPTCHA is solved every 5 seconds
+      if (i % 5 === 0) {
+        const captchaStillPresent = await this.detectCaptcha(page);
+        if (!captchaStillPresent) {
+          console.log('\n✅ CAPTCHA appears to be solved! Continuing...');
+          return;
+        }
+      }
+    }
+
+    console.log(
+      '\n⏰ 60-second wait completed. Continuing with login process...'
+    );
   }
 
   /**
@@ -360,6 +662,9 @@ class AuthService {
         Logger.info('Session expired - redirected to login');
         return;
       }
+
+      // Apply enhanced anti-detection measures
+      await this.applyEnhancedAntiDetection(page);
 
       // Navigate to login page if not already there
       await this.navigateToLogin(page);
