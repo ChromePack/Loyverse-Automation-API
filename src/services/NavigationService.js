@@ -53,6 +53,9 @@ class NavigationService {
       // Wait for page to load and filters to be visible
       await this.waitForPageLoad(page);
 
+      // Apply date filter to ensure we're showing today's data
+      await this.applyDateFilter(page, 'today');
+
       this.logger.info('Successfully navigated to sales report page');
       return true;
     } catch (error) {
@@ -61,6 +64,127 @@ class NavigationService {
         options
       });
       throw new Error(`${ERROR_CODES.NAVIGATION_ERROR}: ${error.message}`);
+    }
+  }
+
+  /**
+   * Apply date filter to the sales report
+   * @param {Object} page - Puppeteer page instance
+   * @param {string} filterType - Type of date filter ('today', 'yesterday', 'week', 'month', etc.)
+   * @returns {Promise<boolean>} Success status
+   */
+  async applyDateFilter(page, filterType = 'today') {
+    try {
+      this.logger.info('Applying date filter', { filterType });
+
+      // Click the calendar button to open the date picker
+      await this.openDateFilterDropdown(page);
+
+      // Select the appropriate date filter
+      await this.selectDateFilterOption(page, filterType);
+
+      // Wait for the filter to be applied
+      await this.waitForFilterUpdate(page);
+
+      this.logger.info('Successfully applied date filter', { filterType });
+      return true;
+    } catch (error) {
+      this.logger.error('Failed to apply date filter', {
+        error: error.message,
+        filterType
+      });
+      throw new Error(`${ERROR_CODES.NAVIGATION_ERROR}: ${error.message}`);
+    }
+  }
+
+  /**
+   * Open the date filter dropdown
+   * @param {Object} page - Puppeteer page instance
+   * @returns {Promise<void>}
+   */
+  async openDateFilterDropdown(page) {
+    try {
+      this.logger.debug('Opening date filter dropdown');
+
+      // Wait for the calendar button to be visible
+      const calendarButton = await page.waitForSelector(
+        SELECTORS.SALES_REPORT.DATE_FILTER_BUTTON,
+        {
+          visible: true,
+          timeout: TIMEOUTS.ELEMENT_WAIT_TIMEOUT
+        }
+      );
+
+      // Click the calendar button
+      await calendarButton.click();
+
+      // Wait for the dropdown to appear
+      await page.waitForSelector(SELECTORS.SALES_REPORT.DATE_FILTER_DROPDOWN, {
+        visible: true,
+        timeout: TIMEOUTS.ELEMENT_WAIT_TIMEOUT
+      });
+
+      this.logger.debug('Date filter dropdown opened');
+    } catch (error) {
+      this.logger.error('Failed to open date filter dropdown', {
+        error: error.message
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Select a date filter option from the dropdown
+   * @param {Object} page - Puppeteer page instance
+   * @param {string} filterType - Type of filter to select
+   * @returns {Promise<void>}
+   */
+  async selectDateFilterOption(page, filterType) {
+    try {
+      this.logger.debug('Selecting date filter option', { filterType });
+
+      let selectorToClick;
+
+      switch (filterType.toLowerCase()) {
+        case 'today':
+          selectorToClick = SELECTORS.SALES_REPORT.DATE_TODAY_BUTTON;
+          break;
+        case 'yesterday':
+          selectorToClick = SELECTORS.SALES_REPORT.DATE_YESTERDAY_BUTTON;
+          break;
+        case 'week':
+        case 'this_week':
+          selectorToClick = SELECTORS.SALES_REPORT.DATE_THIS_WEEK_BUTTON;
+          break;
+        case 'last_week':
+          selectorToClick = SELECTORS.SALES_REPORT.DATE_LAST_WEEK_BUTTON;
+          break;
+        case 'month':
+        case 'this_month':
+          selectorToClick = SELECTORS.SALES_REPORT.DATE_THIS_MONTH_BUTTON;
+          break;
+        case 'last_month':
+          selectorToClick = SELECTORS.SALES_REPORT.DATE_LAST_MONTH_BUTTON;
+          break;
+        default:
+          throw new Error(`Unsupported date filter type: ${filterType}`);
+      }
+
+      // Wait for the option to be visible and click it
+      const filterOption = await page.waitForSelector(selectorToClick, {
+        visible: true,
+        timeout: TIMEOUTS.ELEMENT_WAIT_TIMEOUT
+      });
+
+      await filterOption.click();
+
+      this.logger.debug('Date filter option selected', { filterType });
+    } catch (error) {
+      this.logger.error('Failed to select date filter option', {
+        error: error.message,
+        filterType
+      });
+      throw error;
     }
   }
 

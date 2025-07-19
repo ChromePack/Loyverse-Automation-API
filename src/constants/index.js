@@ -171,6 +171,23 @@ const SELECTORS = {
 
   // Sales report page selectors (based on actual DOM structure)
   SALES_REPORT: {
+    // Date filter selectors
+    DATE_FILTER_BUTTON: '#calendar-open-button, .calendar-label-btn',
+    DATE_FILTER_DROPDOWN: '.calendar-view, .custom-theme',
+    DATE_TODAY_BUTTON: '#calendar-today-button, .btnLi[ng-click*="today"]',
+    DATE_YESTERDAY_BUTTON:
+      '#calendar-yesterday-button, .btnLi[ng-click*="yesterday"]',
+    DATE_THIS_WEEK_BUTTON: '#calendar-week-button, .btnLi[ng-click*="week"]',
+    DATE_LAST_WEEK_BUTTON:
+      '#calendar-last_week-button, .btnLi[ng-click*="lastWeek"]',
+    DATE_THIS_MONTH_BUTTON: '#calendar-month-button, .btnLi[ng-click*="month"]',
+    DATE_LAST_MONTH_BUTTON:
+      '#calendar-last_month-button, .btnLi[ng-click*="lastMonth"]',
+    DATE_CANCEL_BUTTON:
+      '#calendar-cancel-button, .buttons-block-bottom button[ng-click*="cancel"]',
+    DATE_DONE_BUTTON:
+      '#calendar-done-button, .buttons-block-bottom button[ng-click*="apply"]',
+
     // Store/Outlet filter selectors
     STORE_FILTER_BUTTON:
       '#firstDrop button, .reportFilters button[id="dropdownMenu1"]',
