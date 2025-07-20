@@ -226,7 +226,7 @@ class DataExtractionService {
       const filteredData = data.map(row => {
         const filteredRow = {};
         columns.forEach(column => {
-          if (row.hasOwnProperty(column)) {
+          if (Object.prototype.hasOwnProperty.call(row, column)) {
             filteredRow[column] = row[column];
           }
         });

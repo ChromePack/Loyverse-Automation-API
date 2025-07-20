@@ -7,7 +7,14 @@
  * Store configuration array
  * Contains all available stores in the Loyverse system
  */
-const STORES = ['Apung Iska - MAT', 'Store 2', 'Store 3', 'Store 4', 'Store 5'];
+const STORES = [
+  'Apung Iska - MAT',
+  'Apung Iska - MG',
+  'Apung Iska - Main',
+  'Apung Iska - SV',
+  'Capas',
+  'Central-K'
+];
 
 /**
  * Store validation and utility class
@@ -157,7 +164,7 @@ class Store {
     const requiredFields = ['store_name', 'items_count', 'total_sales'];
     return requiredFields.every(
       field =>
-        summary.hasOwnProperty(field) &&
+        Object.prototype.hasOwnProperty.call(summary, field) &&
         summary[field] !== null &&
         summary[field] !== undefined
     );

@@ -171,9 +171,9 @@ const SELECTORS = {
 
   // Sales report page selectors (based on actual DOM structure)
   SALES_REPORT: {
-    // Date filter selectors
+    // Date filter selectors - Updated with exact HTML you provided
     DATE_FILTER_BUTTON: '#calendar-open-button, .calendar-label-btn',
-    DATE_FILTER_DROPDOWN: '.calendar-view, .custom-theme',
+    DATE_FILTER_DROPDOWN: '.calendar-view, .custom-theme, .calendar-dropdown',
     DATE_TODAY_BUTTON: '#calendar-today-button, .btnLi[ng-click*="today"]',
     DATE_YESTERDAY_BUTTON:
       '#calendar-yesterday-button, .btnLi[ng-click*="yesterday"]',
@@ -188,17 +188,16 @@ const SELECTORS = {
     DATE_DONE_BUTTON:
       '#calendar-done-button, .buttons-block-bottom button[ng-click*="apply"]',
 
-    // Store/Outlet filter selectors
-    STORE_FILTER_BUTTON:
-      '#firstDrop button, .reportFilters button[id="dropdownMenu1"]',
-    STORE_FILTER_MENU:
-      '#menu_container_10 md-menu-content, .md-menu-content-filter',
-    ALL_STORES_CHECKBOX:
-      'md-checkbox[aria-label="All stores"], .listCheckbox md-checkbox:first-child',
+    // Store/Outlet filter selectors - Updated with exact HTML you provided
+    STORE_FILTER_BUTTON: '#dropdownMenu1, button[ng-click*="lvOutletCtrlMulti.openMenu"]',
+    STORE_FILTER_MENU: '.md-menu-content-filter, md-menu-content',
+    ALL_STORES_CHECKBOX: 'md-checkbox[aria-label="All stores"], md-checkbox[ng-change*="selectAll"]',
     STORE_CHECKBOX_BY_LABEL: storeName =>
       `md-checkbox[aria-label="${storeName}"]`,
     STORE_CHECKBOX_BY_ID: storeId =>
       `.listCheckbox[id="${storeId}"] md-checkbox`,
+    // Additional selectors for the specific elements
+    SALES_SUMMARY_TITLE: '.table-cell.vertical-middle.height-100.width-100.white.dash-title',
 
     // Employee filter selectors
     EMPLOYEE_FILTER_BUTTON:
