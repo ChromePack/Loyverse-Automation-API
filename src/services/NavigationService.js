@@ -52,7 +52,7 @@ class NavigationService {
         await page.goto('https://r.loyverse.com/dashboard/#/report/sales', {
           waitUntil: 'domcontentloaded',
           timeout: 60000
-      });
+        });
 
         // Wait for page to load
         await new Promise(resolve => setTimeout(resolve, 5000));
@@ -69,7 +69,7 @@ class NavigationService {
       if (date) {
         try {
           this.logger.info('Applying date filter for specified date', { date });
-      await this.applyDateFilter(page, 'today');
+          await this.applyDateFilter(page, 'today');
         } catch (dateError) {
           this.logger.warn('Date filter failed, continuing without it', { 
             error: dateError.message 
@@ -85,6 +85,202 @@ class NavigationService {
         options
       });
       throw new Error(`${ERROR_CODES.NAVIGATION_ERROR}: ${error.message}`);
+    }
+  }
+
+    /**
+   * Navigate to goods report page using direct URL approach
+   * @param {Object} page - Puppeteer page instance
+   * @param {Object} options - Navigation options
+   * @param {string} options.date - Date for the report (YYYY-MM-DD format)
+   * @param {string} options.storeName - Store name to filter (optional)
+   * @returns {Promise<boolean>} Success status
+   */
+  async navigateToGoodsReport(page, options = {}) {
+    try {
+      this.logger.info('Navigating to goods report page', { options });
+
+      const { date, storeName } = options;
+
+      // Simple approach - use hash navigation since we're already on the dashboard
+      const currentUrl = page.url();
+      this.logger.debug('Current URL before navigation', { url: currentUrl });
+
+      if (currentUrl.includes('r.loyverse.com/dashboard')) {
+        // We're already on the dashboard, use hash navigation
+        this.logger.debug('Using hash navigation to goods report');
+        
+        await page.evaluate(() => {
+          window.location.hash = '#/report/goods';
+        });
+
+        // Wait for hash change to take effect and page to load
+        this.logger.debug('Waiting for hash navigation to complete...');
+        await new Promise(resolve => setTimeout(resolve, 5000));
+
+      } else {
+        // Navigate to dashboard first, then to reports
+        this.logger.debug('Navigating to dashboard first');
+        await page.goto('https://r.loyverse.com/dashboard/#/report/goods', {
+          waitUntil: 'domcontentloaded',
+          timeout: 60000
+         });
+
+         // Wait for page to load
+         this.logger.debug('Waiting for initial page load...');
+         await new Promise(resolve => setTimeout(resolve, 5000));
+       }
+
+       // Check final URL
+       const finalUrl = page.url();
+       this.logger.debug('Final URL after navigation', { url: finalUrl });
+
+       // Wait for page elements and data to load completely
+       this.logger.info('Waiting for goods report page to load completely...');
+       await this.waitForGoodsReportPageLoad(page);
+
+       // Additional 10 second wait as requested
+       this.logger.info('Waiting additional 10 seconds for data to fully load...');
+       await new Promise(resolve => setTimeout(resolve, 10000));
+
+       // Apply date filter if specified
+       if (date) {
+         try {
+           this.logger.info('Now attempting to apply date filter after full page load', { date });
+           await this.applyDateFilter(page, 'today');
+         } catch (dateError) {
+           this.logger.warn('Date filter failed, continuing without it', { 
+             error: dateError.message 
+           });
+         }
+       }
+
+       this.logger.info('Successfully navigated to goods report page');
+       return true;
+     } catch (error) {
+       this.logger.error('Failed to navigate to goods report page', {
+         error: error.message,
+         options
+       });
+       throw new Error(`${ERROR_CODES.NAVIGATION_ERROR}: ${error.message}`);
+     }
+   }
+
+  /**
+   * Wait for goods report page to load completely with data
+   * @param {Object} page - Puppeteer page instance
+   * @returns {Promise<void>}
+   */
+  async waitForGoodsReportPageLoad(page) {
+    try {
+      this.logger.debug('Waiting for goods report page elements to load...');
+
+      // Wait for basic page structure
+      await page.waitForFunction(
+        () => {
+          // Check if we're on the goods report page
+          return window.location.hash.includes('/report/goods');
+        },
+        { timeout: 30000 }
+      );
+
+      // Wait for Angular/AngularJS to load and initialize
+      await page.waitForFunction(
+        () => {
+          // Check for Angular being loaded
+          return typeof window.angular !== 'undefined';
+        },
+        { timeout: 30000 }
+      );
+
+      // Wait for any loading indicators to disappear
+      this.logger.debug('Waiting for loading indicators to disappear...');
+      await page.waitForFunction(
+        () => {
+          // Check for common loading indicators
+          const loadingElements = document.querySelectorAll(
+            '.loading, .md-progress-circular, .spinner, .ng-hide, [ng-show*="loading"]'
+          );
+          
+          // Check if loading elements are hidden or not present
+          const hasVisibleLoading = Array.from(loadingElements).some(el => {
+            const style = window.getComputedStyle(el);
+            return style.display !== 'none' && style.visibility !== 'hidden' && el.offsetParent !== null;
+          });
+          
+          return !hasVisibleLoading;
+        },
+        { timeout: 45000 }
+      );
+
+      // Wait for date filter elements to be present
+      this.logger.debug('Waiting for date filter elements to be available...');
+      try {
+        await page.waitForFunction(
+          () => {
+            // Look for date-related elements
+            const dateElements = document.querySelectorAll(
+              'button[ng-click*="calendar"], .calendar-label-btn, #calendar-open-button'
+            );
+            return dateElements.length > 0;
+          },
+          { timeout: 30000 }
+        );
+      } catch (dateElementError) {
+        this.logger.warn('Date filter elements not found, but continuing...', {
+          error: dateElementError.message
+        });
+      }
+
+      // Wait for store filter elements to be present
+      this.logger.debug('Waiting for store filter elements to be available...');
+      try {
+        await page.waitForFunction(
+          () => {
+            // Look for store filter elements
+            const storeElements = document.querySelectorAll(
+              'button[ng-click*="openMenu"], #dropdownMenu1'
+            );
+            return storeElements.length > 0;
+          },
+          { timeout: 30000 }
+        );
+      } catch (storeElementError) {
+        this.logger.warn('Store filter elements not found, but continuing...', {
+          error: storeElementError.message
+        });
+      }
+
+      // Wait for data table or content area to be present
+      this.logger.debug('Waiting for data content to be loaded...');
+      try {
+        await page.waitForFunction(
+          () => {
+            // Look for data table, chart, or content area
+            const contentElements = document.querySelectorAll(
+              'table, .chart-container, .data-table, .report-content, .goods-table'
+            );
+            return contentElements.length > 0;
+          },
+          { timeout: 30000 }
+        );
+      } catch (contentError) {
+        this.logger.warn('Data content not found, but continuing...', {
+          error: contentError.message
+        });
+      }
+
+      // Final wait for any remaining async operations
+      this.logger.debug('Final wait for page stabilization...');
+      await new Promise(resolve => setTimeout(resolve, 3000));
+
+      this.logger.debug('Goods report page loaded successfully');
+    } catch (error) {
+      this.logger.error('Goods report page load timeout', { 
+        error: error.message 
+      });
+      // Don't throw error, just log warning and continue
+      this.logger.warn('Continuing despite page load timeout...');
     }
   }
 

@@ -241,6 +241,7 @@ const LOYVERSE_URLS = {
   LOGIN_URL: 'https://loyverse.com/en/login',
   DASHBOARD_URL: 'https://r.loyverse.com/dashboard',
   SALES_REPORT_BASE: 'https://r.loyverse.com/dashboard/#/report/sales',
+  GOODS_REPORT_BASE: 'https://r.loyverse.com/dashboard/#/report/goods',
 
   // Sales report URL with default parameters
   SALES_REPORT_URL: (params = {}) => {

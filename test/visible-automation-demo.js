@@ -5,7 +5,7 @@
  * for client video recording. It shows the complete automation flow:
  * 1. Browser opens visibly
  * 2. Login to Loyverse
- * 3. Navigate to reports
+ * 3. Navigate to goods report
  * 4. Apply date filter to show today's data
  * 5. Deselect all stores and select specific stores
  * 6. Extract data from all stores using export functionality
@@ -93,45 +93,47 @@ class VisibleAutomationDemo {
     }
   }
 
-  /**
-   * Navigate to Sales by Item report
+    /**
+   * Navigate to Goods report
    */
   async navigateToReports() {
-    console.log('📊 Navigating to Sales by Item report...');
+    console.log('📊 Navigating to Goods report...');
 
     try {
       // Check current page status
       const currentUrl = this.page.url();
       console.log(`📍 Current URL: ${currentUrl}`);
 
-    const navigationResult = await this.navigationService.navigateToSalesReport(
-      this.page,
-      {
-        date: this.extractionDate
-      }
-    );
+       const navigationResult = await this.navigationService.navigateToGoodsReport(
+         this.page,
+         {
+           date: this.extractionDate
+         }
+       );
 
-    if (navigationResult) {
-      console.log('✅ Successfully navigated to Sales by Item report');
-        
-        // Check final URL
-        const finalUrl = this.page.url();
-        console.log(`📍 Final URL: ${finalUrl}`);
-        
-      await new Promise(resolve => setTimeout(resolve, 3000));
-      return true;
-    } else {
-      throw new Error('Navigation failed');
-      }
-    } catch (error) {
-      console.log(`❌ Navigation error: ${error.message}`);
-      
-      // Try to continue anyway for demo purposes
-      console.log('💡 Attempting to continue with current page...');
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      return true;
-    }
-  }
+       if (navigationResult) {
+         console.log('✅ Successfully navigated to Goods report');
+         console.log('⏳ Page loading and data loading completed');
+         console.log('⏳ Additional 10-second wait completed');
+         
+         // Check final URL
+         const finalUrl = this.page.url();
+         console.log(`📍 Final URL: ${finalUrl}`);
+         
+         // No additional wait needed here since NavigationService handles it
+         return true;
+       } else {
+         throw new Error('Navigation failed');
+       }
+     } catch (error) {
+       console.log(`❌ Navigation error: ${error.message}`);
+       
+       // Try to continue anyway for demo purposes
+       console.log('💡 Attempting to continue with current page...');
+       await new Promise(resolve => setTimeout(resolve, 2000));
+       return true;
+     }
+   }
 
   /**
    * Demonstrate date filtering functionality
@@ -430,7 +432,7 @@ class VisibleAutomationDemo {
         extraction_method: 'puppeteer_automation',
         demo_mode: true,
         processing_time: new Date().toISOString(),
-        data_format: 'loyverse_sales_by_item_demo'
+        data_format: 'loyverse_goods_report_demo'
       }
     };
 
@@ -480,7 +482,7 @@ class VisibleAutomationDemo {
     const startTime = Date.now();
 
     try {
-      console.log('🎬 STARTING LOYVERSE VISIBLE AUTOMATION DEMO');
+      console.log('🎬 STARTING LOYVERSE GOODS REPORT AUTOMATION DEMO');
       console.log('='.repeat(60));
 
       // Step 1: Initialize browser
@@ -509,7 +511,7 @@ class VisibleAutomationDemo {
       const duration = (endTime - startTime) / 1000;
 
       console.log('\n' + '='.repeat(60));
-      console.log('🎉 VISIBLE AUTOMATION DEMO COMPLETED SUCCESSFULLY!');
+      console.log('🎉 LOYVERSE GOODS REPORT AUTOMATION COMPLETED!');
       console.log('='.repeat(60));
       console.log(`⏱️  Total Duration: ${duration.toFixed(2)} seconds`);
       console.log(
