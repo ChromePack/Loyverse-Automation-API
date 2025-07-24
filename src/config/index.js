@@ -69,7 +69,7 @@ class Config {
           `--disable-extensions-except=${path.join(__dirname, '..', '..', 'CapSolver.Browser.Extension')}`,
           `--load-extension=${path.join(__dirname, '..', '..', 'CapSolver.Browser.Extension')}`
         ],
-        slowMo: 150,
+        slowMo: 50,
         // Use actual Chrome executable instead of Chromium for better fingerprint
         executablePath: executablePath(),
         defaultViewport: null

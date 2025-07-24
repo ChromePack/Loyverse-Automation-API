@@ -395,6 +395,27 @@ class AuthService {
   }
 
   /**
+   * Handle cookie consent dialog if present
+   */
+  async handleCookieConsent(page) {
+    const cookieButtonSelector = '#CybotCookiebotDialogBodyLevelButtonLevelOptinAllowAll';
+    try {
+      const button = await page.$(cookieButtonSelector);
+      if (button) {
+        console.log('🍪 Cookie consent button found. Clicking to allow all cookies...');
+        await button.click();
+        // Wait for the dialog to disappear
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        console.log('✅ Cookie consent accepted.');
+      } else {
+        console.log('🍪 No cookie consent dialog found.');
+      }
+    } catch (error) {
+      console.log('⚠️  Error handling cookie consent:', error.message);
+    }
+  }
+
+  /**
    * Submit login form and handle response
    * @param {Page} page - Puppeteer page instance
    * @returns {Promise<boolean>} True if login successful
@@ -403,25 +424,22 @@ class AuthService {
     try {
       Logger.info('Submitting login form');
 
+      // Handle cookie consent before login
+      await this.handleCookieConsent(page);
       // Click login button
       await this.humanLikeClick(page, SELECTORS.LOGIN.LOGIN_BUTTON);
 
       // Check for CAPTCHA immediately after clicking login
-      const captchaDetected = await this.detectCaptcha(page);
-      if (captchaDetected) {
-        Logger.warn(
-          'CAPTCHA detected! Waiting 60 seconds (1 minute) for manual solving...'
-        );
-        console.log(
-          '\n🤖 CAPTCHA DETECTED! Please solve it manually in the browser.'
-        );
-        console.log('⏰ Waiting 60 seconds (1 minute) for you to solve the CAPTCHA...\n');
-
-        // Wait 30 seconds for manual CAPTCHA solving
-        await this.waitForManualCaptchaSolving(page);
-
-        Logger.info('Resuming after CAPTCHA wait period');
-      }
+      // const captchaDetected = await this.detectCaptcha(page);
+      // if (captchaDetected) {
+      //   Logger.warn(
+      //     'CAPTCHA detected! Skipping manual solving wait.'
+      //   );
+      //   console.log(
+      //     '\n🤖 CAPTCHA DETECTED! Skipping manual solving wait.\n'
+      //   );
+      //   // Removed manual wait for CAPTCHA solving
+      // }
 
       // Wait for either success (redirect) or error message
       const result = await Promise.race([
@@ -441,96 +459,68 @@ class AuthService {
    * @param {Page} page - Puppeteer page instance
    * @returns {Promise<boolean>} True if CAPTCHA is detected
    */
-  async detectCaptcha(page) {
-    try {
-      // Common CAPTCHA selectors
-      const captchaSelectors = [
-        '.g-recaptcha', // Google reCAPTCHA
-        '#captcha', // Generic CAPTCHA
-        '.captcha', // Generic CAPTCHA class
-        'iframe[src*="recaptcha"]', // reCAPTCHA iframe
-        'iframe[title*="recaptcha"]', // reCAPTCHA iframe with title
-        '.recaptcha-checkbox', // reCAPTCHA checkbox
-        '.h-captcha', // hCaptcha
-        '.cf-turnstile', // Cloudflare Turnstile
-        '[data-sitekey]' // Any element with data-sitekey (common for CAPTCHAs)
-      ];
+  // async detectCaptcha(page) {
+  //   try {
+  //     // Common CAPTCHA selectors
+  //     const captchaSelectors = [
+  //       '.g-recaptcha', // Google reCAPTCHA
+  //       '#captcha', // Generic CAPTCHA
+  //       '.captcha', // Generic CAPTCHA class
+  //       'iframe[src*="recaptcha"]', // reCAPTCHA iframe
+  //       'iframe[title*="recaptcha"]', // reCAPTCHA iframe with title
+  //       '.recaptcha-checkbox', // reCAPTCHA checkbox
+  //       '.h-captcha', // hCaptcha
+  //       '.cf-turnstile', // Cloudflare Turnstile
+  //       '[data-sitekey]' // Any element with data-sitekey (common for CAPTCHAs)
+  //     ];
 
-      for (const selector of captchaSelectors) {
-        try {
-          const element = await page.$(selector);
-          if (element) {
-            // Check if element is visible
-            const isVisible = await page.evaluate(el => {
-              const style = window.getComputedStyle(el); // eslint-disable-line no-undef
-              return (
-                style.display !== 'none' &&
-                style.visibility !== 'hidden' &&
-                style.opacity !== '0'
-              );
-            }, element);
+  //     for (const selector of captchaSelectors) {
+  //       try {
+  //         const element = await page.$(selector);
+  //         if (element) {
+  //           // Check if element is visible
+  //           const isVisible = await page.evaluate(el => {
+  //             const style = window.getComputedStyle(el); // eslint-disable-line no-undef
+  //             return (
+  //               style.display !== 'none' &&
+  //               style.visibility !== 'hidden' &&
+  //               style.opacity !== '0'
+  //             );
+  //           }, element);
 
-            if (isVisible) {
-              Logger.info(`CAPTCHA detected with selector: ${selector}`);
-              return true;
-            }
-          }
-        } catch (selectorError) {
-          // Continue checking other selectors
-          Logger.debug(`CAPTCHA selector not found: ${selector}`);
-        }
-      }
+  //           if (isVisible) {
+  //             Logger.info(`CAPTCHA detected with selector: ${selector}`);
+  //             return true;
+  //           }
+  //         }
+  //       } catch (selectorError) {
+  //         // Continue checking other selectors
+  //         Logger.debug(`CAPTCHA selector not found: ${selector}`);
+  //       }
+  //     }
 
-      // Additional check for reCAPTCHA iframe content
-      try {
-        const frames = await page.frames();
-        for (const frame of frames) {
-          const frameUrl = frame.url();
-          if (frameUrl.includes('recaptcha') || frameUrl.includes('captcha')) {
-            Logger.info(`CAPTCHA detected in iframe: ${frameUrl}`);
-            return true;
-          }
-        }
-      } catch (frameError) {
-        Logger.debug('Error checking frames for CAPTCHA', {
-          error: frameError.message
-        });
-      }
+  //     // Additional check for reCAPTCHA iframe content
+  //     try {
+  //       const frames = await page.frames();
+  //       for (const frame of frames) {
+  //         const frameUrl = frame.url();
+  //         if (frameUrl.includes('recaptcha') || frameUrl.includes('captcha')) {
+  //           Logger.info(`CAPTCHA detected in iframe: ${frameUrl}`);
+  //           return true;
+  //         }
+  //       }
+  //     } catch (frameError) {
+  //       Logger.debug('Error checking frames for CAPTCHA', {
+  //         error: frameError.message
+  //       });
+  //     }
 
-      return false;
-    } catch (error) {
-      Logger.error('Error detecting CAPTCHA', { error: error.message });
-      return false;
-    }
-  }
-
-  /**
-   * Wait for manual CAPTCHA solving with countdown
-   * @param {Page} page - Puppeteer page instance
-   * @returns {Promise<void>}
-   */
-  async waitForManualCaptchaSolving(page) {
-    const waitTime = 60; // 60 seconds (1 minute)
-    const interval = 1000; // 1 second intervals
-
-    for (let i = waitTime; i > 0; i--) {
-      process.stdout.write(`\r⏳ Time remaining: ${i} seconds... `);
-      await new Promise(resolve => setTimeout(resolve, interval));
-
-      // Check if CAPTCHA is solved every 5 seconds
-      if (i % 5 === 0) {
-        const captchaStillPresent = await this.detectCaptcha(page);
-        if (!captchaStillPresent) {
-          console.log('\n✅ CAPTCHA appears to be solved! Continuing...');
-          return;
-        }
-      }
-    }
-
-    console.log(
-      '\n⏰ 60-second wait completed. Continuing with login process...'
-    );
-  }
+  //     return false;
+  //   } catch (error) {
+  //     Logger.error('Error detecting CAPTCHA', { error: error.message });
+  //     return false;
+  //   }
+  // }
 
   /**
    * Wait for successful login (redirect to dashboard)
