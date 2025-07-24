@@ -1,18 +1,18 @@
 const puppeteer = require('puppeteer-extra');
 const StealthPlugin = require('puppeteer-extra-plugin-stealth');
-const RecaptchaPlugin = require('puppeteer-extra-plugin-recaptcha');
+// const RecaptchaPlugin = require('puppeteer-extra-plugin-recaptcha');
 
 // Use stealth plugin to avoid detection
 puppeteer.use(StealthPlugin());
 
 // Use reCAPTCHA plugin for enhanced CAPTCHA handling
-puppeteer.use(RecaptchaPlugin({
-  provider: {
-    id: '2captcha',
-    token: process.env.CAPTCHA_SOLVER_TOKEN || 'MANUAL' // Use 'MANUAL' for manual solving
-  },
-  visualFeedback: true // Show visual feedback during solving
-}));
+  // puppeteer.use(RecaptchaPlugin({
+  //   provider: {
+  //     id: '2captcha',
+  //     token: process.env.CAPTCHA_SOLVER_TOKEN || 'MANUAL' // Use 'MANUAL' for manual solving
+  //   },
+  //   visualFeedback: true // Show visual feedback during solving
+  // }));
 
 const fs = require('fs').promises;
 const path = require('path');
@@ -55,6 +55,21 @@ class BrowserService {
       this.isInitialized = true;
       Logger.info('Browser launched successfully');
 
+      // Get the first tab (page) and store as default
+      const pages = await this.browser.pages();
+      let defaultPage = pages[0];
+      if (!defaultPage) {
+        defaultPage = await this.browser.newPage();
+      }
+      await this.configurePageDownloads(defaultPage);
+      defaultPage.setDefaultTimeout(config.timeouts.navigation);
+      defaultPage.setDefaultNavigationTimeout(config.timeouts.navigation);
+      this.pages.set('default', defaultPage);
+      defaultPage.on('close', () => {
+        Logger.info('Page closed: default');
+        this.pages.delete('default');
+      });
+
       // Handle browser disconnect
       this.browser.on('disconnected', () => {
         Logger.warn('Browser disconnected unexpectedly');
@@ -80,26 +95,40 @@ class BrowserService {
         await this.launch();
       }
 
-      Logger.info(`Creating new page: ${pageId}`);
+      // Reuse the default page if it exists
+      let page = this.pages.get(pageId);
+      if (page) {
+        Logger.info(`Reusing existing page: ${pageId}`);
+        return page;
+      }
 
-      const page = await this.browser.newPage();
+      // If no page exists, try to get the first available page from the browser
+      const pages = await this.browser.pages();
+      if (pages.length > 0) {
+        page = pages[0];
+        await this.configurePageDownloads(page);
+        page.setDefaultTimeout(config.timeouts.navigation);
+        page.setDefaultNavigationTimeout(config.timeouts.navigation);
+        this.pages.set(pageId, page);
+        page.on('close', () => {
+          Logger.info(`Page closed: ${pageId}`);
+          this.pages.delete(pageId);
+        });
+        Logger.info(`Reusing first browser page as: ${pageId}`);
+        return page;
+      }
 
-      // Configure download behavior
+      // As a fallback, create a new page (should rarely happen)
+      Logger.info(`No existing page found, creating new page: ${pageId}`);
+      page = await this.browser.newPage();
       await this.configurePageDownloads(page);
-
-      // Set timeouts
       page.setDefaultTimeout(config.timeouts.navigation);
       page.setDefaultNavigationTimeout(config.timeouts.navigation);
-
-      // Store page reference
       this.pages.set(pageId, page);
-
-      // Handle page close
       page.on('close', () => {
         Logger.info(`Page closed: ${pageId}`);
         this.pages.delete(pageId);
       });
-
       Logger.info(`Page created successfully: ${pageId}`);
       return page;
     } catch (error) {

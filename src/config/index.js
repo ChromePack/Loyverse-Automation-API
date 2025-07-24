@@ -1,5 +1,6 @@
 const path = require('path');
 require('dotenv').config();
+const { executablePath } = require('puppeteer');
 
 /**
  * Centralized configuration for the Loyverse Automation API
@@ -62,104 +63,16 @@ class Config {
       navigationTimeout: parseInt(process.env.NAVIGATION_TIMEOUT, 10) || 30000,
       launchOptions: {
         headless: process.env.PUPPETEER_HEADLESS !== 'false',
-        // Use actual Chrome executable instead of Chromium for better fingerprint
-        executablePath: process.env.CHROME_EXECUTABLE_PATH || 
-          (process.platform === 'linux' ? '/usr/bin/google-chrome' : 
-           process.platform === 'darwin' ? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome' : 
-           undefined),
         args: [
-          // Core security settings
-          '--no-sandbox',
-          '--disable-setuid-sandbox',
-          '--disable-dev-shm-usage',
-          '--no-first-run',
-          '--no-zygote',
-          '--disable-gpu',
-          
-          // Primary anti-detection: Remove automation indicators
-          '--disable-blink-features=AutomationControlled',
-          '--exclude-switches=enable-automation',
-          '--disable-extensions-except=',
-          '--disable-plugins-discovery',
-          '--disable-default-apps',
-          
-          // Advanced fingerprinting countermeasures
-          '--disable-features=VizDisplayCompositor,TranslateUI,BlinkGenPropertyTrees',
           '--disable-web-security',
-          '--disable-features=site-per-process',
-          '--disable-ipc-flooding-protection',
-          '--enable-features=NetworkService,NetworkServiceInProcess',
-          
-          // Language and locale settings for realistic fingerprint
-          '--lang=en-US,en',
-          '--accept-lang=en-US,en;q=0.9',
-          
-          // Behavioral detection countermeasures
-          '--disable-background-networking',
-          '--disable-background-timer-throttling',
-          '--disable-renderer-backgrounding',
-          '--disable-backgrounding-occluded-windows',
-          '--disable-client-side-phishing-detection',
-          '--disable-component-update',
-          '--disable-domain-reliability',
-          '--disable-sync',
-          '--disable-translate',
-          '--disable-hang-monitor',
-          '--disable-popup-blocking',
-          '--disable-prompt-on-repost',
-          '--disable-component-extensions-with-background-pages',
-          '--disable-background-mode',
-          '--disable-breakpad',
-          '--metrics-recording-only',
-          '--no-default-browser-check',
-          '--no-pings',
-          '--password-store=basic',
-          '--use-mock-keychain',
-          '--mute-audio',
-          
-          // Memory and performance optimizations
-          '--memory-pressure-off',
-          '--max_old_space_size=4096',
-          
-          // Additional stealth measures to avoid detection
-          '--disable-accelerated-2d-canvas',
-          '--disable-accelerated-jpeg-decoding',
-          '--disable-accelerated-mjpeg-decode',
-          '--disable-accelerated-video-decode',
-          '--disable-app-list-dismiss-on-blur',
-          '--disable-canvas-aa',
-          '--disable-2d-canvas-clip-aa',
-          '--disable-gl-drawing-for-tests',
-          '--disable-threaded-animation',
-          '--disable-threaded-scrolling',
-          '--disable-checker-imaging',
-          '--disable-new-bookmark-apps',
-          '--disable-office-editing-component-app',
-          '--disable-reading-from-canvas',
-          '--run-all-compositor-stages-before-draw',
-          
-          // Simulate real browser environment
-          '--enable-logging',
-          '--log-level=3',
-          '--disable-logging',
-          '--disable-dev-shm-usage'
+          '--disable-features=IsolateOrigins,site-per-process',
+          `--disable-extensions-except=${path.join(__dirname, '..', '..', 'CapSolver.Browser.Extension')}`,
+          `--load-extension=${path.join(__dirname, '..', '..', 'CapSolver.Browser.Extension')}`
         ],
-        defaultViewport: {
-          width: 1366, // More common resolution
-          height: 768,
-          deviceScaleFactor: 1,
-          isMobile: false,
-          hasTouch: false,
-          isLandscape: true
-        },
-        ignoreDefaultArgs: [
-          '--enable-automation',
-          '--enable-blink-features=IdleDetection',
-          '--disable-extensions'
-        ],
-        ignoreHTTPSErrors: true,
-        slowMo: 150, // Increased for more human-like behavior
-        devtools: false
+        slowMo: 150,
+        // Use actual Chrome executable instead of Chromium for better fingerprint
+        executablePath: executablePath(),
+        defaultViewport: null
       }
     };
   }
