@@ -33,7 +33,7 @@ const { Store } = require('../src/models/Store');
 const { DateUtils } = require('../src/utils/dateUtils');
 const { Logger } = require('../src/utils/logger');
 
-class WorkflowVisibleGoodsReport {
+class WorkflowGoodsReport {
   constructor() {
     this.logger = Logger;
     this.browserService = new BrowserService();
@@ -471,7 +471,7 @@ class WorkflowVisibleGoodsReport {
   }
 
   /**
-   * Run the complete visible automation workflow
+   * Run the complete goods report automation workflow
    * @returns {Promise<Object>} Final result object
    */
   async run() {
@@ -497,4 +497,4 @@ class WorkflowVisibleGoodsReport {
   }
 }
 
-module.exports = WorkflowVisibleGoodsReport;
+module.exports = WorkflowGoodsReport;

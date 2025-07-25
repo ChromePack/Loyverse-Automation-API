@@ -1,15 +1,15 @@
 const path = require('path');
 const { Logger } = require('../utils/logger');
 const { v4: uuidv4 } = require('uuid');
-const WorkflowVisibleGoodsReport = require(path.join(__dirname, '../../workflow/workflow-visible-goods-report.js'));
+const WorkflowGoodsReport = require(path.join(__dirname, '../../workflow/workflow-goods-report.js'));
 
 // In-memory job store (for demo; use DB/Redis in production)
 const jobs = {};
 
 /**
- * StartController - Handles the /start automation endpoint
+ * GoodsReportController - Handles the /start automation endpoint for goods report
  */
-class StartController {
+class GoodsReportController {
   /**
    * Triggers the visible automation demo as a background job
    * POST /api/start
@@ -18,13 +18,32 @@ class StartController {
     const requestId = req.requestId;
     Logger.info('Received /start automation request', { requestId });
 
+    // Check for an active job (pending or running)
+    const activeJobEntry = Object.entries(jobs).find(
+      ([, job]) => job.status === 'pending' || job.status === 'running'
+    );
+    if (activeJobEntry) {
+      const [activeJobId, activeJob] = activeJobEntry;
+      return res.status(429).json({
+        success: false,
+        jobId: activeJobId,
+        status: activeJob.status,
+        message: 'A job is already running. Please wait for it to finish before starting a new one.',
+        metadata: {
+          request_id: requestId,
+          api_version: '1.0.0',
+          timestamp: new Date().toISOString()
+        }
+      });
+    }
+
     // 1. Generate a job ID and store initial status
     const jobId = uuidv4();
-    jobs[jobId] = { status: 'pending', result: null, error: null, startedAt: new Date() };
+    jobs[jobId] = { status: 'running', result: null, error: null, startedAt: new Date() };
 
     // 2. Run the automation in the background
     (async () => {
-      const demo = new WorkflowVisibleGoodsReport();
+      const demo = new WorkflowGoodsReport();
       try {
         const result = await demo.run();
         jobs[jobId] = { ...jobs[jobId], status: 'completed', result, finishedAt: new Date() };
@@ -37,7 +56,7 @@ class StartController {
     res.status(202).json({
       success: true,
       jobId,
-      status: 'pending',
+      status: 'running',
       message: 'Automation started. Check status with GET /api/start/' + jobId,
       metadata: {
         request_id: requestId,
@@ -72,4 +91,4 @@ class StartController {
   }
 }
 
-module.exports = { StartController }; 
+module.exports = { GoodsReportController }; 
