@@ -1,7 +1,7 @@
 const path = require('path');
 const { Logger } = require('../utils/logger');
 const { v4: uuidv4 } = require('uuid');
-const VisibleAutomationDemo = require(path.join(__dirname, '../../test/visible-automation-demo.js'));
+const WorkflowVisibleGoodsReport = require(path.join(__dirname, '../../workflow/workflow-visible-goods-report.js'));
 
 // In-memory job store (for demo; use DB/Redis in production)
 const jobs = {};
@@ -24,9 +24,9 @@ class StartController {
 
     // 2. Run the automation in the background
     (async () => {
-      const demo = new VisibleAutomationDemo();
+      const demo = new WorkflowVisibleGoodsReport();
       try {
-        const result = await demo.runDemo();
+        const result = await demo.run();
         jobs[jobId] = { ...jobs[jobId], status: 'completed', result, finishedAt: new Date() };
       } catch (error) {
         jobs[jobId] = { ...jobs[jobId], status: 'failed', error: error.message, finishedAt: new Date() };

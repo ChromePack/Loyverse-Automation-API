@@ -33,7 +33,7 @@ const { Store } = require('../src/models/Store');
 const { DateUtils } = require('../src/utils/dateUtils');
 const { Logger } = require('../src/utils/logger');
 
-class VisibleAutomationDemo {
+class WorkflowVisibleGoodsReport {
   constructor() {
     this.logger = Logger;
     this.browserService = new BrowserService();
@@ -41,7 +41,6 @@ class VisibleAutomationDemo {
     this.navigationService = new NavigationService();
     this.csvParserService = new CsvParserService();
     this.validationService = new ValidationService();
-
     this.stores = Store.getAllStores();
     this.extractionDate = DateUtils.formatToApiDate(new Date());
     this.allStoreData = [];
@@ -472,60 +471,25 @@ class VisibleAutomationDemo {
   }
 
   /**
-   * Run the complete visible automation demo
+   * Run the complete visible automation workflow
+   * @returns {Promise<Object>} Final result object
    */
-  async runDemo() {
+  async run() {
     const startTime = Date.now();
-
     try {
-      console.log('🎬 STARTING LOYVERSE GOODS REPORT AUTOMATION DEMO');
-      console.log('='.repeat(60));
-
-      // Step 1: Initialize browser
+      this.logger.info('STARTING LOYVERSE GOODS REPORT AUTOMATION WORKFLOW');
       await this.initializeBrowser();
-
-      // Step 2: Login
       await this.loginToLoyverse();
-
-      // Step 3: Navigate to reports
       await this.navigateToReports();
-
-      // Step 4: Demonstrate date filtering
       await this.demonstrateDateFiltering();
-
-      // Step 5: Extract data from all stores
       await this.extractAllStoresData();
-
-      // Step 6: Generate final response
       const finalResponse = this.generateFinalResponse();
-
-      // Step 8: Display summary
       const endTime = Date.now();
-      const duration = (endTime - startTime) / 1000;
-
-      console.log('\n' + '='.repeat(60));
-      console.log('🎉 LOYVERSE GOODS REPORT AUTOMATION COMPLETED!');
-      console.log('='.repeat(60));
-      console.log(`⏱️  Total Duration: ${duration.toFixed(2)} seconds`);
-      console.log(
-        `🏪 Stores Processed: ${finalResponse.data.total_stores_processed}`
-      );
-      console.log(
-        `✅ Successful: ${finalResponse.data.successful_extractions}`
-      );
-      console.log(`❌ Failed: ${finalResponse.data.failed_extractions}`);
-      console.log(
-        `📦 Total Items: ${finalResponse.data.total_items_across_all_stores}`
-      );
-      console.log(
-        `💰 Total Sales: $${finalResponse.data.total_sales_across_all_stores.toFixed(2)}`
-      );
-      // console.log(`📄 Results saved to: processing/${savedFile}`);
-      console.log('='.repeat(60));
-
+      finalResponse.metadata = finalResponse.metadata || {};
+      finalResponse.metadata.processing_time_seconds = ((endTime - startTime) / 1000).toFixed(2);
       return finalResponse;
     } catch (error) {
-      console.error('❌ Demo failed:', error);
+      this.logger.error('Workflow failed', { error });
       throw error;
     } finally {
       await this.cleanup();
@@ -533,22 +497,4 @@ class VisibleAutomationDemo {
   }
 }
 
-// Run the demo
-if (require.main === module) {
-  const demo = new VisibleAutomationDemo();
-
-  demo
-    .runDemo()
-    .then(result => {
-      console.log('\n🎉 Visible automation demo completed successfully!');
-      console.log('🎬 Perfect for client video demonstration!');
-      console.log('📄 Check the processing folder for the final JSON response');
-      process.exit(0);
-    })
-    .catch(error => {
-      console.error('\n❌ Visible automation demo failed:', error.message);
-      process.exit(1);
-    });
-}
-
-module.exports = VisibleAutomationDemo;
+module.exports = WorkflowVisibleGoodsReport;
