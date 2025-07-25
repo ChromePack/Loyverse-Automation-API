@@ -169,7 +169,7 @@ router.use('/reports', (req, res) => {
 });
 
 // Start automation endpoint
-router.post('/start', async (req, res) => {
+router.get('/start', async (req, res) => {
   await goodsReportController.startAutomation(req, res);
 });
 

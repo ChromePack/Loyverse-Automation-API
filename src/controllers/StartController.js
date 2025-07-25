@@ -2,6 +2,7 @@ const path = require('path');
 const { Logger } = require('../utils/logger');
 const { v4: uuidv4 } = require('uuid');
 const WorkflowGoodsReport = require(path.join(__dirname, '../../workflow/workflow-goods-report.js'));
+const fetch = require('node-fetch');
 
 // In-memory job store (for demo; use DB/Redis in production)
 const jobs = {};
@@ -44,12 +45,62 @@ class GoodsReportController {
     // 2. Run the automation in the background
     (async () => {
       const demo = new WorkflowGoodsReport();
+      let jobStatus = 'completed';
+      let result = null;
+      let error = null;
       try {
-        const result = await demo.run();
-        jobs[jobId] = { ...jobs[jobId], status: 'completed', result, finishedAt: new Date() };
-      } catch (error) {
-        jobs[jobId] = { ...jobs[jobId], status: 'failed', error: error.message, finishedAt: new Date() };
+        result = await demo.run();
+      } catch (err) {
+        jobStatus = 'failed';
+        error = err.message;
       }
+
+      // Prepare job data for webhook and job store
+      const finishedAt = new Date();
+      const jobData = {
+        ...jobs[jobId],
+        status: jobStatus,
+        result,
+        error,
+        finishedAt
+      };
+
+      // Webhook logic
+      const webhookUrl = process.env['8N8_WEBHOOK_URL'];
+      if (webhookUrl) {
+        const payload = {
+          success: jobStatus === 'completed',
+          jobId,
+          status: jobStatus,
+          result,
+          error,
+          startedAt: jobs[jobId].startedAt,
+          finishedAt
+        };
+        let attempt = 0;
+        let webhookSuccess = false;
+        while (attempt < 3 && !webhookSuccess) {
+          attempt++;
+          try {
+            const response = await fetch(webhookUrl, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload)
+            });
+            if (response.ok) {
+              webhookSuccess = true;
+              Logger.info(`Webhook POST succeeded on attempt ${attempt}`, { jobId, webhookUrl });
+            } else {
+              Logger.error(`Webhook POST failed with status ${response.status} on attempt ${attempt}`, { jobId, webhookUrl });
+            }
+          } catch (err) {
+            Logger.error(`Webhook POST error on attempt ${attempt}: ${err.message}`, { jobId, webhookUrl });
+          }
+        }
+      }
+
+      // Only now mark job as finished
+      jobs[jobId] = jobData;
     })();
 
     // 3. Respond immediately with jobId
