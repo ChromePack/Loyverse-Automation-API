@@ -292,20 +292,63 @@ class VisibleAutomationDemo {
       console.log(`  📥 Clicking export button for ${storeName}...`);
       const exportResult = await this.navigationService.exportData(this.page);
       console.log(`  ✅ Export button clicked successfully`);
-      await new Promise(resolve => setTimeout(resolve, 3000));
+      await new Promise(resolve => setTimeout(resolve, 5000));
 
       if (exportResult) {
         console.log(`  ✅ Data exported successfully for ${storeName}`);
 
-        // For demo purposes, create mock data since we don't have actual CSV processing
-        const mockData = this.generateMockData(storeName);
+        // 1. Build the expected CSV file path
+        const path = require('path');
+        const fs = require('fs').promises;
+        // Example: downloads/item-sales-summary-2025-07-25-2025-07-25.csv
+        // We'll use today's date for the filename
+        const date = this.extractionDate; // YYYY-MM-DD
+        const csvFilename = `item-sales-summary-${date}-${date}.csv`;
+        const csvFilePath = path.join(__dirname, '../downloads', csvFilename);
+
+        // 2. Wait for the file to exist (simple retry logic)
+        let retries = 10;
+        let fileExists = false;
+        while (retries > 0) {
+          try {
+            await fs.access(csvFilePath);
+            fileExists = true;
+            break;
+          } catch (e) {
+            await new Promise(res => setTimeout(res, 1000)); // wait 1s
+            retries--;
+          }
+        }
+        if (!fileExists) {
+          throw new Error(`CSV file not found: ${csvFilePath}`);
+        }
+
+        // 3. Read and parse the CSV file
+        const csvData = await this.csvParserService.parseFile(csvFilePath);
+        const transformedData = csvData.map(row => ({
+          date_sold: this.extractionDate,
+          store_branch: storeName,
+          item_name: row['Item Name'] || row.item_name || '',
+          sku: row['SKU'] || row.sku || '',
+          category: row['Category'] || row.category || '',
+          items_sold: parseInt(row['Items Sold'] || row.items_sold || 0),
+          gross_sales: parseFloat(row['Gross Sales'] || row.gross_sales || 0),
+          items_refunded: parseInt(row['Items Refunded'] || row.items_refunded || 0),
+          refunds: parseFloat(row['Refunds'] || row.refunds || 0),
+          discounts: parseFloat(row['Discounts'] || row.discounts || 0),
+          net_sales: parseFloat(row['Net Sales'] || row.net_sales || 0),
+          cost_of_goods: parseFloat(row['Cost of Goods'] || row.cost_of_goods || 0),
+          gross_profit: parseFloat(row['Gross Profit'] || row.gross_profit || 0),
+          margin: typeof row['Margin'] === 'string' ? row['Margin'] : (row.margin || ''),
+          taxes: parseFloat(row['Taxes'] || row.taxes || 0)
+        }));
 
         return {
           store_name: storeName,
           success: true,
-          items_count: mockData.length,
-          total_sales: this.calculateTotalSales(mockData),
-          items: mockData
+          items_count: transformedData.length,
+          total_sales: this.calculateTotalSales(transformedData),
+          items: transformedData
         };
       } else {
         throw new Error('Export failed');
@@ -315,15 +358,12 @@ class VisibleAutomationDemo {
         `  ⚠️  Store selection/export failed for ${storeName}, using mock data for demo`
       );
 
-      // For demo purposes, still show mock data even if selection fails
-      const mockData = this.generateMockData(storeName);
-
       return {
         store_name: storeName,
-        success: true,
-        items_count: mockData.length,
-        total_sales: this.calculateTotalSales(mockData),
-        items: mockData
+        success: false,
+        items_count: 0,
+        total_sales: 0,
+        items: []
       };
     }
   }
@@ -355,32 +395,6 @@ class VisibleAutomationDemo {
       console.error(`  ❌ CSV processing failed:`, error.message);
       return [];
     }
-  }
-
-  /**
-   * Generate mock data for demo purposes
-   */
-  generateMockData(storeName) {
-    const mockItems = [
-      { name: 'Coffee Latte', category: 'Beverages', sold: 25, sales: 1250.5 },
-      { name: 'Cappuccino', category: 'Beverages', sold: 18, sales: 990.0 },
-      { name: 'Espresso', category: 'Beverages', sold: 32, sales: 1440.0 },
-      { name: 'Chicken Sandwich', category: 'Food', sold: 15, sales: 825.75 },
-      { name: 'Caesar Salad', category: 'Food', sold: 12, sales: 780.25 },
-      { name: 'Margherita Pizza', category: 'Food', sold: 8, sales: 960.0 },
-      { name: 'Croissant', category: 'Pastries', sold: 22, sales: 660.0 },
-      { name: 'Muffin', category: 'Pastries', sold: 16, sales: 480.25 },
-      { name: 'Bagel', category: 'Pastries', sold: 14, sales: 420.0 }
-    ];
-
-    return mockItems.map(item => ({
-      date_sold: this.extractionDate,
-      store_branch: storeName,
-      item_name: item.name,
-      category: item.category,
-      items_sold: item.sold,
-      gross_sales: item.sales
-    }));
   }
 
   /**
@@ -440,24 +454,6 @@ class VisibleAutomationDemo {
   }
 
   /**
-   * Save final response to processing folder
-   */
-  async saveFinalResponse(finalResponse) {
-    try {
-      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-      const filename = `loyverse-visible-demo-result_${timestamp}.json`;
-      const filePath = path.join(__dirname, '../processing', filename);
-
-      await fs.writeFile(filePath, JSON.stringify(finalResponse, null, 2));
-      console.log(`💾 Final response saved to: processing/${filename}`);
-
-      return filename;
-    } catch (error) {
-      console.error('❌ Failed to save final response:', error);
-    }
-  }
-
-  /**
    * Cleanup resources
    */
   async cleanup() {
@@ -503,9 +499,6 @@ class VisibleAutomationDemo {
       // Step 6: Generate final response
       const finalResponse = this.generateFinalResponse();
 
-      // Step 7: Save results
-      const savedFile = await this.saveFinalResponse(finalResponse);
-
       // Step 8: Display summary
       const endTime = Date.now();
       const duration = (endTime - startTime) / 1000;
@@ -527,7 +520,7 @@ class VisibleAutomationDemo {
       console.log(
         `💰 Total Sales: $${finalResponse.data.total_sales_across_all_stores.toFixed(2)}`
       );
-      console.log(`📄 Results saved to: processing/${savedFile}`);
+      // console.log(`📄 Results saved to: processing/${savedFile}`);
       console.log('='.repeat(60));
 
       return finalResponse;

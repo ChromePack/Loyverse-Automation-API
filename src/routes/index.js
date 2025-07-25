@@ -7,8 +7,10 @@ const {
   sanitizeRequest,
   requestTimeout
 } = require('../middleware/routeMiddleware');
+const { StartController } = require('../controllers/StartController');
 
 const router = express.Router();
+const startController = new StartController();
 
 /**
  * Main API router configuration
@@ -164,6 +166,16 @@ router.use('/reports', (req, res) => {
       timestamp: new Date().toISOString()
     }
   });
+});
+
+// Start automation endpoint
+router.get('/start', async (req, res) => {
+  await startController.startAutomation(req, res);
+});
+
+// Start automation endpoint
+router.get('/start/:jobId', (req, res) => {
+  startController.getJobStatus(req, res);
 });
 
 // API documentation endpoint
