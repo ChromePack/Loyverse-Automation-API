@@ -92,9 +92,9 @@ class WorkflowGoodsReport {
     }
   }
 
-    /**
-   * Navigate to Goods report
-   */
+  /**
+ * Navigate to Goods report
+ */
   async navigateToReports() {
     console.log('📊 Navigating to Goods report...');
 
@@ -103,36 +103,36 @@ class WorkflowGoodsReport {
       const currentUrl = this.page.url();
       console.log(`📍 Current URL: ${currentUrl}`);
 
-       const navigationResult = await this.navigationService.navigateToGoodsReport(
-         this.page,
-         {
-           date: this.extractionDate
-         }
-       );
+      const navigationResult = await this.navigationService.navigateToGoodsReport(
+        this.page,
+        {
+          date: this.extractionDate
+        }
+      );
 
-       if (navigationResult) {
-         console.log('✅ Successfully navigated to Goods report');
-         console.log('⏳ Page loading and data loading completed');
-         console.log('⏳ Additional 10-second wait completed');
-         
-         // Check final URL
-         const finalUrl = this.page.url();
-         console.log(`📍 Final URL: ${finalUrl}`);
-         
-         // No additional wait needed here since NavigationService handles it
-         return true;
-       } else {
-         throw new Error('Navigation failed');
-       }
-     } catch (error) {
-       console.log(`❌ Navigation error: ${error.message}`);
-       
-       // Try to continue anyway for demo purposes
-       console.log('💡 Attempting to continue with current page...');
-       await new Promise(resolve => setTimeout(resolve, 2000));
-       return true;
-     }
-   }
+      if (navigationResult) {
+        console.log('✅ Successfully navigated to Goods report');
+        console.log('⏳ Page loading and data loading completed');
+        console.log('⏳ Additional 10-second wait completed');
+
+        // Check final URL
+        const finalUrl = this.page.url();
+        console.log(`📍 Final URL: ${finalUrl}`);
+
+        // No additional wait needed here since NavigationService handles it
+        return true;
+      } else {
+        throw new Error('Navigation failed');
+      }
+    } catch (error) {
+      console.log(`❌ Navigation error: ${error.message}`);
+
+      // Try to continue anyway for demo purposes
+      console.log('💡 Attempting to continue with current page...');
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      return true;
+    }
+  }
 
   /**
    * Demonstrate date filtering functionality
@@ -159,19 +159,19 @@ class WorkflowGoodsReport {
           break;
         }
       }
-      
+
       if (dateFilterExists) {
         console.log('🔄 Date filter found, applying "Today" filter...');
-        
+
         // Try to apply date filter
-      await this.navigationService.applyDateFilter(this.page, 'today');
-      console.log('✅ "Today" filter applied successfully');
+        await this.navigationService.applyDateFilter(this.page, 'today');
+        console.log('✅ "Today" filter applied successfully');
 
         // Wait for filter to take effect
         await new Promise(resolve => setTimeout(resolve, 3000));
       } else {
         console.log('💡 Date filter UI not found with any selector, trying manual approach...');
-        
+
         // Try to find any button with date-related text
         const buttons = await this.page.$$('button');
         for (const button of buttons) {
@@ -179,7 +179,7 @@ class WorkflowGoodsReport {
           if (text && (text.includes('All day') || text.includes('Today') || text.includes('Calendar'))) {
             console.log(`🔍 Found date-related button: "${text}"`);
             await button.click();
-      await new Promise(resolve => setTimeout(resolve, 2000));
+            await new Promise(resolve => setTimeout(resolve, 2000));
             break;
           }
         }
@@ -208,7 +208,7 @@ class WorkflowGoodsReport {
       // Click outside to close the dropdown
       console.log('  👆 Clicking "Sales summary" to close dropdown...');
       await this.navigationService.closeStoreFilterDropdown(this.page);
-      
+
       console.log('  ✅ All stores deselected successfully');
     } catch (error) {
       console.log('  ⚠️  All stores deselection failed, continuing...');
@@ -276,7 +276,7 @@ class WorkflowGoodsReport {
         console.log(`  ☑️  Selecting ${storeName}...`);
       }
       await this.navigationService.selectSpecificStore(this.page, storeName, previousStoreName);
-      
+
       if (previousStoreName) {
         console.log(`  ✅ Store selected: ${storeName} (${previousStoreName} unchecked)`);
       } else {
@@ -324,23 +324,26 @@ class WorkflowGoodsReport {
 
         // 3. Read and parse the CSV file
         const csvData = await this.csvParserService.parseFile(csvFilePath);
-        const transformedData = csvData.map(row => ({
-          date_sold: this.extractionDate,
-          store_branch: storeName,
-          item_name: row['Item Name'] || row.item_name || '',
-          sku: row['SKU'] || row.sku || '',
-          category: row['Category'] || row.category || '',
-          items_sold: parseInt(row['Items Sold'] || row.items_sold || 0),
-          gross_sales: parseFloat(row['Gross Sales'] || row.gross_sales || 0),
-          items_refunded: parseInt(row['Items Refunded'] || row.items_refunded || 0),
-          refunds: parseFloat(row['Refunds'] || row.refunds || 0),
-          discounts: parseFloat(row['Discounts'] || row.discounts || 0),
-          net_sales: parseFloat(row['Net Sales'] || row.net_sales || 0),
-          cost_of_goods: parseFloat(row['Cost of Goods'] || row.cost_of_goods || 0),
-          gross_profit: parseFloat(row['Gross Profit'] || row.gross_profit || 0),
-          margin: typeof row['Margin'] === 'string' ? row['Margin'] : (row.margin || ''),
-          taxes: parseFloat(row['Taxes'] || row.taxes || 0)
-        }));
+        const transformedData = csvData.map(row => {
+          const temp = {
+            date_sold: this.extractionDate,
+            store_branch: storeName,
+            item_name: row['Item name'] || '',
+            sku: row['SKU'] || row.sku || '',
+            category: row['Category'] || row.category || '',
+            items_sold: parseInt(row['Items sold'] || row.items_sold || 0),
+            gross_sales: parseFloat(row['Gross sales'] || row.gross_sales || 0),
+            items_refunded: parseInt(row['Items refunded'] || row.items_refunded || 0),
+            refunds: parseFloat(row['Refunds'] || row.refunds || 0),
+            discounts: parseFloat(row['Discounts'] || row.discounts || 0),
+            net_sales: parseFloat(row['Net sales'] || row.net_sales || 0),
+            cost_of_goods: parseFloat(row['Cost of Goods'] || row.cost_of_goods || 0),
+            gross_profit: parseFloat(row['Gross Profit'] || row.gross_profit || 0),
+            margin: typeof row['Margin'] === 'string' ? row['Margin'] : (row.margin || ''),
+            taxes: parseFloat(row['Taxes'] || row.taxes || 0)
+          }
+          return temp;
+        });
 
         return {
           store_name: storeName,

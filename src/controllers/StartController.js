@@ -2,10 +2,11 @@ const path = require('path');
 const { Logger } = require('../utils/logger');
 const { v4: uuidv4 } = require('uuid');
 const WorkflowGoodsReport = require(path.join(__dirname, '../../workflow/workflow-goods-report.js'));
-const fetch = require('node-fetch');
+const { WebhookService } = require('../services/WebhookService');
 
 // In-memory job store (for demo; use DB/Redis in production)
 const jobs = {};
+const webhookService = new WebhookService();
 
 /**
  * GoodsReportController - Handles the /start automation endpoint for goods report
@@ -66,38 +67,16 @@ class GoodsReportController {
       };
 
       // Webhook logic
-      const webhookUrl = process.env['8N8_WEBHOOK_URL'];
-      if (webhookUrl) {
-        const payload = {
-          success: jobStatus === 'completed',
-          jobId,
-          status: jobStatus,
-          result,
-          error,
-          startedAt: jobs[jobId].startedAt,
-          finishedAt
-        };
-        let attempt = 0;
-        let webhookSuccess = false;
-        while (attempt < 3 && !webhookSuccess) {
-          attempt++;
-          try {
-            const response = await fetch(webhookUrl, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(payload)
-            });
-            if (response.ok) {
-              webhookSuccess = true;
-              Logger.info(`Webhook POST succeeded on attempt ${attempt}`, { jobId, webhookUrl });
-            } else {
-              Logger.error(`Webhook POST failed with status ${response.status} on attempt ${attempt}`, { jobId, webhookUrl });
-            }
-          } catch (err) {
-            Logger.error(`Webhook POST error on attempt ${attempt}: ${err.message}`, { jobId, webhookUrl });
-          }
-        }
-      }
+      const payload = {
+        success: jobStatus === 'completed',
+        jobId,
+        status: jobStatus,
+        result,
+        error,
+        startedAt: jobs[jobId].startedAt,
+        finishedAt
+      };
+      await webhookService.sendWebhook(payload, jobId);
 
       // Only now mark job as finished
       jobs[jobId] = jobData;

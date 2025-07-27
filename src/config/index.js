@@ -125,6 +125,19 @@ class Config {
       requestSizeLimit: process.env.REQUEST_SIZE_LIMIT || '10mb'
     };
   }
+
+  /**
+   * Webhook configuration
+   */
+  get webhook() {
+    return {
+      url: process.env['8N8_WEBHOOK_URL'] || process.env.WEBHOOK_URL,
+      timeout: parseInt(process.env.WEBHOOK_TIMEOUT, 10) || 10000, // 10 seconds
+      maxRetries: parseInt(process.env.WEBHOOK_MAX_RETRIES, 10) || 3,
+      retryDelay: parseInt(process.env.WEBHOOK_RETRY_DELAY, 10) || 2000, // 2 seconds
+      enabled: process.env.WEBHOOK_ENABLED !== 'false' // enabled by default
+    };
+  }
 }
 
 module.exports = new Config();

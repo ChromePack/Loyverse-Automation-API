@@ -1,8 +1,10 @@
 const express = require('express');
+const { WebhookService } = require('../services/WebhookService');
 const { Logger } = require('../utils/logger');
 const { ERROR_CODES } = require('../constants');
 
 const router = express.Router();
+const webhookService = new WebhookService();
 
 /**
  * Health check routes
@@ -27,39 +29,77 @@ router.use((req, res, next) => {
 });
 
 /**
- * Basic health check endpoint
+ * Health check endpoint
  * GET /api/health
- *
- * Returns basic system health information
  */
 router.get('/', (req, res) => {
-  const healthData = {
-    status: 'healthy',
+  res.json({
+    status: 'ok',
     timestamp: new Date().toISOString(),
-    api: 'Loyverse Automation API',
-    version: '1.0.0',
-    environment: process.env.NODE_ENV || 'development',
     uptime: process.uptime(),
-    memory: {
-      used: Math.round(process.memoryUsage().heapUsed / 1024 / 1024),
-      total: Math.round(process.memoryUsage().heapTotal / 1024 / 1024),
-      external: Math.round(process.memoryUsage().external / 1024 / 1024),
-      rss: Math.round(process.memoryUsage().rss / 1024 / 1024)
-    },
-    system: {
-      platform: process.platform,
-      nodeVersion: process.version,
-      pid: process.pid,
-      arch: process.arch
-    },
-    metadata: {
-      request_id: req.requestId,
-      api_version: '1.0.0',
-      timestamp: new Date().toISOString()
+    memory: process.memoryUsage(),
+    version: process.env.npm_package_version || '1.0.0'
+  });
+});
+
+/**
+ * Webhook health check endpoint
+ * GET /api/health/webhook
+ */
+router.get('/webhook', (req, res) => {
+  const validation = webhookService.validateConfig();
+  
+  res.json({
+    status: validation.isValid ? 'ok' : 'error',
+    timestamp: new Date().toISOString(),
+    webhook: {
+      enabled: webhookService.config.enabled,
+      url: webhookService.config.url,
+      timeout: webhookService.config.timeout,
+      maxRetries: webhookService.config.maxRetries,
+      retryDelay: webhookService.config.retryDelay,
+      validation: validation
     }
+  });
+});
+
+/**
+ * Test webhook endpoint
+ * POST /api/health/webhook/test
+ */
+router.post('/webhook/test', async (req, res) => {
+  const requestId = req.requestId;
+  Logger.info('Testing webhook connectivity', { requestId });
+
+  const testPayload = {
+    success: true,
+    jobId: 'test-' + Date.now(),
+    status: 'test',
+    result: { message: 'This is a test webhook call' },
+    error: null,
+    startedAt: new Date().toISOString(),
+    finishedAt: new Date().toISOString()
   };
 
-  res.json(healthData);
+  try {
+    const success = await webhookService.sendWebhook(testPayload, testPayload.jobId);
+    
+    res.json({
+      success,
+      message: success ? 'Webhook test successful' : 'Webhook test failed',
+      timestamp: new Date().toISOString(),
+      requestId
+    });
+  } catch (error) {
+    Logger.error('Webhook test failed', { requestId, error: error.message });
+    res.status(500).json({
+      success: false,
+      message: 'Webhook test failed',
+      error: error.message,
+      timestamp: new Date().toISOString(),
+      requestId
+    });
+  }
 });
 
 /**
