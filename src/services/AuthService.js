@@ -33,6 +33,12 @@ class AuthService {
    * @returns {Promise<void>}
    */
   async humanLikeTyping(page, selector, text) {
+    Logger.debug('⌨️  Starting human-like typing:', {
+      selector: selector,
+      textLength: text ? text.length : 0,
+      textPreview: text ? (text.length > 10 ? text.substring(0, 10) + '...' : text) : 'EMPTY'
+    });
+
     await page.click(selector);
     await this.humanLikeDelay(200, 500);
 
@@ -43,10 +49,21 @@ class AuthService {
     await this.humanLikeDelay(50, 100);
 
     // Type each character with random delays
-    for (const char of text) {
+    for (let i = 0; i < text.length; i++) {
+      const char = text[i];
       await page.keyboard.type(char);
+      
+      // Log progress for long texts
+      if (text.length > 20 && (i + 1) % 10 === 0) {
+        Logger.debug(`⌨️  Typing progress: ${i + 1}/${text.length} characters`);
+      }
+      
       await this.humanLikeDelay(50, 150);
     }
+
+    Logger.debug('✅ Human-like typing completed:', {
+      totalCharacters: text ? text.length : 0
+    });
 
     await this.humanLikeDelay(100, 200);
   }
@@ -256,7 +273,18 @@ class AuthService {
 
   async authenticate(pageId = 'auth-page') {
     try {
-      Logger.info('Starting Loyverse authentication process');
+      Logger.info('🚀 Starting Loyverse authentication process');
+
+      // Log detailed credentials information
+      this.logCredentialsInfo();
+
+      // Log authentication attempt
+      Logger.info('🔍 Authentication attempt details:', {
+        username: config.loyverse.username,
+        hasPassword: !!config.loyverse.password,
+        passwordLength: config.loyverse.password ? config.loyverse.password.length : 0,
+        pageId: pageId
+      });
 
       // Get or create page
       let page = this.browserService.getPage(pageId);
@@ -266,6 +294,14 @@ class AuthService {
 
       // Apply enhanced anti-detection measures
       await this.applyEnhancedAntiDetection(page);
+
+      // First, check if we're already authenticated (session persistence)
+      const isAlreadyAuthenticated = await this.verifyAuthentication(page);
+      if (isAlreadyAuthenticated) {
+        this.isAuthenticated = true;
+        Logger.info('✅ Already authenticated - session persisted');
+        return true;
+      }
 
       // Navigate to login page
       await this.navigateToLogin(page);
@@ -278,16 +314,16 @@ class AuthService {
 
       if (success) {
         this.isAuthenticated = true;
-        Logger.info('Authentication successful');
+        Logger.info('✅ Authentication successful - session will be persisted');
         return true;
       } else {
         this.isAuthenticated = false;
-        Logger.error('Authentication failed');
+        Logger.error('❌ Authentication failed');
         return false;
       }
     } catch (error) {
       this.isAuthenticated = false;
-      Logger.error('Authentication error', { error: error.message });
+      Logger.error('❌ Authentication error', { error: error.message });
       throw new Error(`Authentication failed: ${error.message}`);
     }
   }
@@ -337,6 +373,12 @@ class AuthService {
         'Filling login form with credentials using human-like behavior'
       );
 
+      // Log credentials for debugging
+      Logger.info('🔐 Login credentials:', {
+        username: config.loyverse.username,
+        password: config.loyverse.password ? '***' + config.loyverse.password.slice(-3) : 'NOT_SET'
+      });
+
       // Wait for email input to be visible with human-like delay
       await page.waitForSelector(SELECTORS.LOGIN.EMAIL_INPUT, {
         visible: true,
@@ -345,6 +387,7 @@ class AuthService {
       await this.humanLikeDelay(300, 600);
 
       // Fill email field with human-like typing
+      Logger.info('📝 Filling username field:', { username: config.loyverse.username });
       await this.humanLikeTyping(
         page,
         SELECTORS.LOGIN.EMAIL_INPUT,
@@ -359,6 +402,10 @@ class AuthService {
       await this.humanLikeDelay(200, 400);
 
       // Fill password field with human-like typing
+      Logger.info('🔑 Filling password field:', { 
+        password: config.loyverse.password ? '***' + config.loyverse.password.slice(-3) : 'NOT_SET',
+        passwordLength: config.loyverse.password ? config.loyverse.password.length : 0
+      });
       await this.humanLikeTyping(
         page,
         SELECTORS.LOGIN.PASSWORD_INPUT,
@@ -387,9 +434,9 @@ class AuthService {
         Logger.debug('Remember me checkbox not found or already checked');
       }
 
-      Logger.info('Login form filled successfully with human-like behavior');
+      Logger.info('✅ Login form filled successfully with human-like behavior');
     } catch (error) {
-      Logger.error('Failed to fill login form', { error: error.message });
+      Logger.error('❌ Failed to fill login form', { error: error.message });
       throw new Error(`Form filling failed: ${error.message}`);
     }
   }
@@ -710,6 +757,25 @@ class AuthService {
    */
   getAuthenticationStatus() {
     return this.isAuthenticated;
+  }
+
+  /**
+   * Log credentials information for debugging
+   * @returns {void}
+   */
+  logCredentialsInfo() {
+    Logger.info('🔐 Credentials Information:', {
+      username: config.loyverse.username,
+      usernameLength: config.loyverse.username ? config.loyverse.username.length : 0,
+      hasPassword: !!config.loyverse.password,
+      passwordLength: config.loyverse.password ? config.loyverse.password.length : 0,
+      passwordPreview: config.loyverse.password ? 
+        (config.loyverse.password.length > 3 ? 
+          '***' + config.loyverse.password.slice(-3) : 
+          '***' + config.loyverse.password) : 
+        'NOT_SET',
+      isAuthenticated: this.isAuthenticated
+    });
   }
 
   /**

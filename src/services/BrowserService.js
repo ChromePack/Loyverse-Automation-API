@@ -40,11 +40,13 @@ class BrowserService {
     try {
       Logger.info('Launching browser with configuration', {
         headless: config.puppeteer.headless,
-        downloadPath: this.downloadPath
+        downloadPath: this.downloadPath,
+        userDataDir: config.paths.userData
       });
 
-      // Ensure download directory exists
+      // Ensure directories exist
       await this.ensureDownloadDirectory();
+      await this.ensureUserDataDirectory();
 
       // Launch browser with configuration
       this.browser = await puppeteer.launch({
@@ -53,7 +55,7 @@ class BrowserService {
       });
 
       this.isInitialized = true;
-      Logger.info('Browser launched successfully');
+      Logger.info('Browser launched successfully with session persistence');
 
       // Get the first tab (page) and store as default
       const pages = await this.browser.pages();
@@ -157,12 +159,16 @@ class BrowserService {
 
       // Set user agent to avoid detection
       await page.setUserAgent(
-        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
       );
 
-      // Set extra headers
+      // Set extra headers for stealth
       await page.setExtraHTTPHeaders({
-        'Accept-Language': 'en-US,en;q=0.9'
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache'
       });
 
       Logger.debug('Page download configuration completed');
@@ -346,6 +352,23 @@ class BrowserService {
         error: error.message
       });
       throw new Error(`Download directory creation failed: ${error.message}`);
+    }
+  }
+
+  /**
+   * Ensure user data directory exists
+   * @returns {Promise<void>}
+   */
+  async ensureUserDataDirectory() {
+    try {
+      await fs.mkdir(config.paths.userData, { recursive: true });
+      Logger.debug(`User data directory ensured: ${config.paths.userData}`);
+    } catch (error) {
+      Logger.error('Failed to create user data directory', {
+        path: config.paths.userData,
+        error: error.message
+      });
+      throw new Error(`User data directory creation failed: ${error.message}`);
     }
   }
 

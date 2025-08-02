@@ -58,14 +58,21 @@ class Config {
    */
   get puppeteer() {
     return {
-      headless: process.env.PUPPETEER_HEADLESS === 'true',
+      headless: true,
       downloadTimeout: parseInt(process.env.DOWNLOAD_TIMEOUT, 10) || 30000,
       navigationTimeout: parseInt(process.env.NAVIGATION_TIMEOUT, 10) || 30000,
       launchOptions: {
-        headless: process.env.PUPPETEER_HEADLESS !== 'false',
+        headless: true,
+        userDataDir: this.paths.userData,
         args: [
           '--disable-web-security',
           '--disable-features=IsolateOrigins,site-per-process',
+          '--no-sandbox',
+          '--disable-setuid-sandbox',
+          '--disable-dev-shm-usage',
+          '--disable-gpu',
+          '--no-first-run',
+          '--no-default-browser-check',
           `--disable-extensions-except=${path.join(__dirname, '..', '..', 'CapSolver.Browser.Extension')}`,
           `--load-extension=${path.join(__dirname, '..', '..', 'CapSolver.Browser.Extension')}`
         ],
@@ -86,7 +93,8 @@ class Config {
         rootDir,
         process.env.PROCESSING_PATH || 'processing'
       ),
-      logs: path.join(rootDir, 'logs')
+      logs: path.join(rootDir, 'logs'),
+      userData: path.join(rootDir, process.env.USER_DATA_DIR || 'chrome-user-data')
     };
   }
 
