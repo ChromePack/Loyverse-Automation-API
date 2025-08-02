@@ -1,0 +1,20 @@
+version: '3.8'
+
+services:
+  loyverse-api:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - LOYVERSE_USERNAME=mostafasalehi796@gmail.com
+      - LOYVERSE_PASSWORD=4q$qH5F2uWMVQz.
+      - 8N8_WEBHOOK_URL=http://localhost:5678/webhook/eb25f31a-326c-4434-a327-eadd26183b51
+    cap_add:
+      - SYS_ADMIN
+    init: true
+    restart: unless-stopped
+    volumes:
+      - ./downloads:/app/downloads
+      - ./chrome-user-data:/app/chrome-user-data 

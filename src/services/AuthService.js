@@ -280,9 +280,9 @@ class AuthService {
 
       // Log authentication attempt
       Logger.info('🔍 Authentication attempt details:', {
-        username: config.loyverse.username,
-        hasPassword: !!config.loyverse.password,
-        passwordLength: config.loyverse.password ? config.loyverse.password.length : 0,
+        username: 'mostafasalehi796@gmail.com',
+        hasPassword: true,
+        passwordLength: 15,
         pageId: pageId
       });
 
@@ -375,8 +375,8 @@ class AuthService {
 
       // Log credentials for debugging
       Logger.info('🔐 Login credentials:', {
-        username: config.loyverse.username,
-        password: config.loyverse.password ? '***' + config.loyverse.password.slice(-3) : 'NOT_SET'
+        username: 'mostafasalehi796@gmail.com',
+        password: '***z.'
       });
 
       // Wait for email input to be visible with human-like delay
@@ -387,11 +387,11 @@ class AuthService {
       await this.humanLikeDelay(300, 600);
 
       // Fill email field with human-like typing
-      Logger.info('📝 Filling username field:', { username: config.loyverse.username });
+      Logger.info('📝 Filling username field:', { username: 'mostafasalehi796@gmail.com' });
       await this.humanLikeTyping(
         page,
         SELECTORS.LOGIN.EMAIL_INPUT,
-        config.loyverse.username
+        'mostafasalehi796@gmail.com'
       );
 
       // Wait for password input to be visible with human-like delay
@@ -403,13 +403,13 @@ class AuthService {
 
       // Fill password field with human-like typing
       Logger.info('🔑 Filling password field:', { 
-        password: config.loyverse.password ? '***' + config.loyverse.password.slice(-3) : 'NOT_SET',
-        passwordLength: config.loyverse.password ? config.loyverse.password.length : 0
+        password: '***z.',
+        passwordLength: 15
       });
       await this.humanLikeTyping(
         page,
         SELECTORS.LOGIN.PASSWORD_INPUT,
-        config.loyverse.password
+        '4q$qH5F2uWMVQz.'
       );
 
       // Optional: Check remember me checkbox with human-like behavior
@@ -765,15 +765,11 @@ class AuthService {
    */
   logCredentialsInfo() {
     Logger.info('🔐 Credentials Information:', {
-      username: config.loyverse.username,
-      usernameLength: config.loyverse.username ? config.loyverse.username.length : 0,
-      hasPassword: !!config.loyverse.password,
-      passwordLength: config.loyverse.password ? config.loyverse.password.length : 0,
-      passwordPreview: config.loyverse.password ? 
-        (config.loyverse.password.length > 3 ? 
-          '***' + config.loyverse.password.slice(-3) : 
-          '***' + config.loyverse.password) : 
-        'NOT_SET',
+      username: 'mostafasalehi796@gmail.com',
+      usernameLength: 25,
+      hasPassword: true,
+      passwordLength: 15,
+      passwordPreview: '***z.',
       isAuthenticated: this.isAuthenticated
     });
   }

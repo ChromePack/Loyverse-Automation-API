@@ -16,14 +16,8 @@ class Config {
    * @throws {Error} If required environment variables are missing
    */
   validateRequiredEnvVars() {
-    const requiredVars = ['LOYVERSE_USERNAME', 'LOYVERSE_PASSWORD'];
-    const missingVars = requiredVars.filter(varName => !process.env[varName]);
-
-    if (missingVars.length > 0) {
-      throw new Error(
-        `Missing required environment variables: ${missingVars.join(', ')}`
-      );
-    }
+    // Credentials are now hardcoded, no validation needed
+    console.log('✅ Credentials validation skipped - using hardcoded values');
   }
 
   /**
@@ -43,8 +37,8 @@ class Config {
    */
   get loyverse() {
     return {
-      username: process.env.LOYVERSE_USERNAME,
-      password: process.env.LOYVERSE_PASSWORD,
+      username: 'mostafasalehi796@gmail.com',
+      password: '4q$qH5F2uWMVQz.',
       baseUrl: process.env.LOYVERSE_BASE_URL || 'https://r.loyverse.com'
     };
   }
@@ -139,7 +133,7 @@ class Config {
    */
   get webhook() {
     return {
-      url: process.env['8N8_WEBHOOK_URL'] || process.env.WEBHOOK_URL,
+      url: 'http://localhost:5678/webhook/eb25f31a-326c-4434-a327-eadd26183b51',
       timeout: parseInt(process.env.WEBHOOK_TIMEOUT, 10) || 10000, // 10 seconds
       maxRetries: parseInt(process.env.WEBHOOK_MAX_RETRIES, 10) || 3,
       retryDelay: parseInt(process.env.WEBHOOK_RETRY_DELAY, 10) || 2000, // 2 seconds
