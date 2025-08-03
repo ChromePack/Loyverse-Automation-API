@@ -1,0 +1,49 @@
+steps:
+  # Build the container image
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', 'gcr.io/$PROJECT_ID/loyverse-automation-api', '.']
+  
+  # Push the container image to Container Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/$PROJECT_ID/loyverse-automation-api']
+  
+  # Deploy container image to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'loyverse-automation-api'
+      - '--image'
+      - 'gcr.io/$PROJECT_ID/loyverse-automation-api'
+      - '--region'
+      - 'us-central1'
+      - '--platform'
+      - 'managed'
+      - '--allow-unauthenticated'
+      - '--memory'
+      - '2Gi'
+      - '--cpu'
+      - '2'
+      - '--timeout'
+      - '3600'
+      - '--concurrency'
+      - '80'
+      - '--max-instances'
+      - '10'
+      - '--set-env-vars'
+      - 'NODE_ENV=production'
+      - '--set-env-vars'
+      - 'LOYVERSE_USERNAME=${_LOYVERSE_USERNAME}'
+      - '--set-env-vars'
+      - 'LOYVERSE_PASSWORD=${_LOYVERSE_PASSWORD}'
+      - '--set-env-vars'
+      - '8N8_WEBHOOK_URL=${_8N8_WEBHOOK_URL}'
+
+images:
+  - 'gcr.io/$PROJECT_ID/loyverse-automation-api'
+
+substitutions:
+  _LOYVERSE_USERNAME: 'mostafasalehi796@gmail.com'
+  _LOYVERSE_PASSWORD: '4q$qH5F2uWMVQz.'
+  _8N8_WEBHOOK_URL: 'http://localhost:5678/webhook/eb25f31a-326c-4434-a327-eadd26183b51' 

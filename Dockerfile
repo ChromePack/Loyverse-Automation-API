@@ -1,27 +1,43 @@
-# Use the official Puppeteer Docker image as base
-FROM ghcr.io/puppeteer/puppeteer:latest
+# Use Node.js base image instead of Puppeteer
+FROM node:18-slim
 
-# Set working directory
+# Install Chrome dependencies
+RUN apt-get update && apt-get install -y \
+    wget \
+    gnupg \
+    ca-certificates \
+    procps \
+    libxss1 \
+    && wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - \
+    && sh -c 'echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list' \
+    && apt-get update \
+    && apt-get install -y google-chrome-stable fonts-ipafont-gothic fonts-wqy-zenhei fonts-thai-tlwg fonts-kacst fonts-freefont-ttf libxss1 \
+    --no-install-recommends \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create app directory
 WORKDIR /app
 
 # Copy package files
-COPY package.json yarn.lock* ./
+COPY package*.json ./
 
-# Install dependencies using yarn
-RUN yarn install --frozen-lockfile
+# Install dependencies
+RUN npm install
 
 # Copy application source code
 COPY . .
 
+# Create necessary directories
+RUN mkdir -p /app/downloads /app/chrome-user-data
+
 # Expose the port the app runs on
-EXPOSE 3000
+EXPOSE 8080
 
 # Set environment variables
 ENV NODE_ENV=production
-ENV PORT=3000
-ENV LOYVERSE_USERNAME=mostafasalehi796@gmail.com
-ENV LOYVERSE_PASSWORD=4q$qH5F2uWMVQz.
-ENV 8N8_WEBHOOK_URL=http://localhost:5678/webhook/eb25f31a-326c-4434-a327-eadd26183b51
+ENV PORT=8080
+ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/google-chrome-stable
 
 # Start the application
-CMD ["yarn", "start"] 
+CMD ["npm", "start"] 

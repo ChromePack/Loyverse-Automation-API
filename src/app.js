@@ -34,18 +34,12 @@ function createApp() {
  * @param {Express} app - Express application instance
  */
 function configureSecurityMiddleware(app) {
-  // Basic security headers
+  // Basic security headers with less restrictive settings for Cloud Run
   app.use(
     helmet({
-      contentSecurityPolicy: {
-        directives: {
-          defaultSrc: ["'self'"],
-          styleSrc: ["'self'", "'unsafe-inline'"],
-          scriptSrc: ["'self'"],
-          imgSrc: ["'self'", 'data:', 'https:']
-        }
-      },
-      crossOriginEmbedderPolicy: false
+      contentSecurityPolicy: false, // Disable CSP for API
+      crossOriginEmbedderPolicy: false,
+      crossOriginResourcePolicy: { policy: "cross-origin" }
     })
   );
 
