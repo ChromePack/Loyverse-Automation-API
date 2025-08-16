@@ -21,7 +21,7 @@
 
 const path = require('path');
 const fs = require('fs').promises;
-require('dotenv').config();
+require('dotenv').config({ quiet: true });
 
 // Import services
 const BrowserService = require('../src/services/BrowserService');
