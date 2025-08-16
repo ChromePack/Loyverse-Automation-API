@@ -52,11 +52,11 @@ class Config {
    */
   get puppeteer() {
     return {
-      headless: true,
+      headless: false,
       downloadTimeout: parseInt(process.env.DOWNLOAD_TIMEOUT, 10) || 30000,
       navigationTimeout: parseInt(process.env.NAVIGATION_TIMEOUT, 10) || 30000,
       launchOptions: {
-        headless: true,
+        headless: false,
         userDataDir: this.paths.userData,
         args: [
           '--disable-web-security',
