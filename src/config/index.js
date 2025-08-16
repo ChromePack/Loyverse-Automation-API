@@ -9,6 +9,7 @@ const { executablePath } = require('puppeteer');
 class Config {
   constructor() {
     this.validateRequiredEnvVars();
+    this.chromeExecutablePath = "/opt/google/chrome/google-chrome";
   }
 
   /**
@@ -59,21 +60,23 @@ class Config {
         headless: false,
         userDataDir: this.paths.userData,
         args: [
-          '--disable-web-security',
-          '--disable-features=IsolateOrigins,site-per-process',
-          '--no-sandbox',
-          '--disable-setuid-sandbox',
-          '--disable-dev-shm-usage',
-          '--disable-gpu',
-          '--no-first-run',
-          '--no-default-browser-check',
-          `--disable-extensions-except=${path.join(__dirname, '..', '..', 'CapSolver.Browser.Extension')}`,
+          "--no-sandbox",
+          "--disable-setuid-sandbox",
+          "--disable-dev-shm-usage",
+          "--disable-accelerated-2d-canvas",
+          "--no-first-run",
+          "--no-zygote",
+          "--disable-gpu",
+          //`--disable-extensions-except=${path.join(__dirname, '..', '..', 'CapSolver.Browser.Extension')}`,
           `--load-extension=${path.join(__dirname, '..', '..', 'CapSolver.Browser.Extension')}`
         ],
+        defaultViewport: {
+          width: 1920,
+          height: 1080,
+        },
         slowMo: 50,
         // Use actual Chrome executable instead of Chromium for better fingerprint
-        executablePath: executablePath(),
-        defaultViewport: null
+        executablePath: this.chromeExecutablePath,
       }
     };
   }
