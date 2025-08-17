@@ -14,6 +14,7 @@ module.exports = {
       env_production: {
         NODE_ENV: 'production',
         PORT: 3001,
+        DISPLAY: ':99',
         LOYVERSE_USERNAME: 'mostafasalehi796@gmail.com',
         LOYVERSE_PASSWORD: '4q$qH5F2uWMVQz.',
         LOYVERSE_BASE_URL: 'https://r.loyverse.com',

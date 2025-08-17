@@ -9,7 +9,38 @@ const { executablePath } = require('puppeteer');
 class Config {
   constructor() {
     this.validateRequiredEnvVars();
-    this.chromeExecutablePath = "/opt/google/chrome/google-chrome";
+    // Try multiple Chrome paths for different Ubuntu installations
+    this.chromeExecutablePath = this.getChromeExecutablePath();
+  }
+
+  /**
+   * Get Chrome executable path for Ubuntu
+   * @returns {string} Chrome executable path
+   */
+  getChromeExecutablePath() {
+    const possiblePaths = [
+      '/usr/bin/google-chrome-stable',
+      '/usr/bin/google-chrome',
+      '/opt/google/chrome/google-chrome',
+      '/usr/bin/chromium-browser',
+      '/usr/bin/chromium'
+    ];
+
+    // Check if any of these paths exist
+    for (const path of possiblePaths) {
+      try {
+        const fs = require('fs');
+        if (fs.existsSync(path)) {
+          console.log(`✅ Found Chrome at: ${path}`);
+          return path;
+        }
+      } catch (error) {
+        continue;
+      }
+    }
+
+    console.warn('⚠️ Chrome not found in standard paths, using default');
+    return '/usr/bin/google-chrome-stable';
   }
 
   /**
@@ -67,8 +98,41 @@ class Config {
           "--no-first-run",
           "--no-zygote",
           "--disable-gpu",
-          //`--disable-extensions-except=${path.join(__dirname, '..', '..', 'CapSolver.Browser.Extension')}`,
-          `--load-extension=${path.join(__dirname, '..', '..', 'CapSolver.Browser.Extension')}`
+          "--disable-web-security",
+          "--disable-features=VizDisplayCompositor",
+          "--disable-background-timer-throttling",
+          "--disable-backgrounding-occluded-windows",
+          "--disable-renderer-backgrounding",
+          "--disable-field-trial-config",
+          "--disable-ipc-flooding-protection",
+          "--disable-hang-monitor",
+          "--disable-prompt-on-repost",
+          "--disable-client-side-phishing-detection",
+          "--disable-component-extensions-with-background-pages",
+          "--disable-default-apps",
+          "--disable-sync",
+          "--disable-translate",
+          "--hide-scrollbars",
+          "--mute-audio",
+          "--no-default-browser-check",
+          "--safebrowsing-disable-auto-update",
+          "--disable-xvfb",
+          "--disable-background-networking",
+          "--disable-background-timer-throttling",
+          "--disable-backgrounding-occluded-windows",
+          "--disable-breakpad",
+          "--disable-component-extensions-with-background-pages",
+          "--disable-features=TranslateUI,BlinkGenPropertyTrees",
+          "--disable-ipc-flooding-protection",
+          "--disable-renderer-backgrounding",
+          "--enable-features=NetworkService,NetworkServiceLogging",
+          "--force-color-profile=srgb",
+          "--metrics-recording-only",
+          "--no-first-run",
+          "--password-store=basic",
+          "--use-mock-keychain",
+          "--disable-extensions-except=" + path.join(__dirname, '..', '..', 'CapSolver.Browser.Extension'),
+          "--load-extension=" + path.join(__dirname, '..', '..', 'CapSolver.Browser.Extension')
         ],
         defaultViewport: {
           width: 1920,
