@@ -7,6 +7,7 @@
   "license": "MIT",
   "scripts": {
     "start": "node src/server.js",
+    "start:prod": "./start-server.sh",
     "dev": "nodemon src/server.js",
     "clear-session": "node clear-session.js",
     "lint": "eslint src/",
@@ -16,7 +17,9 @@
     "test": "node test/test-browser-launch.js",
     "test:browser": "node test/test-browser-launch.js",
     "test:extension": "node test/test-extension.js",
-    "test:simple": "node simple-browser-test.js"
+    "test:simple": "node simple-browser-test.js",
+    "setup:vps": "./setup-vps.sh",
+    "deploy": "pm2 deploy production"
   },
   "devDependencies": {
     "@types/node": "^24.0.14",
