@@ -79,6 +79,9 @@ apt-get install -y \
 echo "🔐 Setting up VNC..."
 mkdir -p /root/.vnc
 
+# Remove any existing VNC sessions
+vncserver -kill :1 >/dev/null 2>&1 || true
+
 # Create VNC password (you should change this)
 echo "loyverse123" | vncpasswd -f > /root/.vnc/passwd
 chmod 600 /root/.vnc/passwd
@@ -86,13 +89,22 @@ chmod 600 /root/.vnc/passwd
 # Create VNC startup script
 cat > /root/.vnc/xstartup << 'EOF'
 #!/bin/bash
-xrdb $HOME/.Xresources
+
+# Uncomment the following two lines for normal desktop:
+unset SESSION_MANAGER
+unset DBUS_SESSION_BUS_ADDRESS
+
+# Load X resources
+xrdb $HOME/.Xresources 2>/dev/null || true
+
+# Set background
 xsetroot -solid grey
-#x-terminal-emulator -geometry 80x24+10+10 -ls -title "$VNCDESKTOP Desktop" &
-#x-window-manager &
-# Fix to make GNOME work
-export XKL_XMODMAP_DISABLE=1
-/etc/X11/Xsession
+
+# Start XFCE desktop environment
+startxfce4 &
+
+# Alternative for minimal setup (uncomment if XFCE doesn't work):
+# exec /etc/X11/Xsession
 EOF
 
 chmod +x /root/.vnc/xstartup
@@ -137,6 +149,12 @@ EOF
 # Start and enable VNC services
 systemctl daemon-reload
 systemctl enable vncserver@1.service
+
+# Start VNC server manually first to ensure it works
+echo "🚀 Starting VNC server manually..."
+vncserver :1 -geometry 1920x1080 -depth 24 -localhost no
+
+# Then start the systemd service
 systemctl start vncserver@1.service
 
 # Create Xvfb service for headless display
@@ -185,3 +203,20 @@ echo ""
 echo "📊 Services Status:"
 systemctl status vncserver@1.service --no-pager
 systemctl status xvfb.service --no-pager
+
+echo ""
+echo "🔍 VNC Connection Test:"
+ps aux | grep -E "(vnc|Xvnc)" | grep -v grep || echo "⚠️  No VNC processes found"
+
+echo ""
+echo "🔌 VNC Ports:"
+netstat -tlnp | grep -E ":(590[0-9])" || echo "⚠️  No VNC ports listening"
+
+echo ""
+echo "🧪 Testing VNC manually (if needed):"
+echo "   vncserver -kill :1"
+echo "   vncserver :1 -geometry 1920x1080 -depth 24 -localhost no"
+echo ""
+echo "🔧 Troubleshooting commands:"
+echo "   ./diagnose-vnc.sh  # Comprehensive VNC diagnostics"
+echo "   ./fix-vnc.sh       # Fix common VNC issues"

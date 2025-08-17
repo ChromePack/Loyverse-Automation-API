@@ -26,17 +26,22 @@ module.exports = {
     },
   ],
 
+  // Deploy configuration disabled for Windows compatibility
+  // Use deploy-manual.bat or deploy-vps.sh instead
   deploy: {
     production: {
       user: "root",
       host: "72.60.32.173",
       ref: "origin/main",
-      repo: "https://github.com/ChromePack/Loyverse-Automation-API",
+      repo: "https://github.com/ChromePack/Loyverse-Automation-API.git",
       path: "/var/www/loyverse-automation-api",
       "pre-deploy-local": "",
-      "post-deploy":
-        "yarn install && pm2 reload ecosystem.config.js --env production",
+      "post-deploy": "yarn install && pm2 reload ecosystem.config.js --env production",
       "pre-setup": "",
+      ssh_options: "StrictHostKeyChecking=no",
+      env: {
+        NODE_ENV: "production"
+      }
     },
   },
 };

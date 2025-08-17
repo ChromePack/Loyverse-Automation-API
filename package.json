@@ -19,7 +19,9 @@
     "test:extension": "node test/test-extension.js",
     "test:simple": "node simple-browser-test.js",
     "setup:vps": "./setup-vps.sh",
-    "deploy": "pm2 deploy production"
+    "setup:vps:windows": "setup-vps.bat",
+    "deploy": "pm2 deploy production",
+    "deploy:windows": "deploy-manual.bat"
   },
   "devDependencies": {
     "@types/node": "^24.0.14",
