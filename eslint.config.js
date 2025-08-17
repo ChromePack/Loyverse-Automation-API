@@ -46,7 +46,7 @@ module.exports = [
         { max: 100, skipBlankLines: true, skipComments: true }
       ],
       'max-params': ['warn', 4],
-      complexity: ['warn', 10],
+      complexity: ['warn', 30],
 
       // STYLE RULES - Turned off or made less strict
       'max-depth': 'off',

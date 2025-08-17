@@ -107,63 +107,21 @@ class Config {
         headless: shouldUseHeadless ? 'new' : false,
         userDataDir: this.paths.userData,
         args: [
-          // Essential arguments for stability
-          "--no-sandbox",
-          "--disable-setuid-sandbox", 
+                    "--no-sandbox",
+          "--disable-setuid-sandbox",
           "--disable-dev-shm-usage",
+          "--disable-accelerated-2d-canvas",
           "--no-first-run",
-          "--disable-background-timer-throttling",
-          "--disable-backgrounding-occluded-windows",
-          "--disable-renderer-backgrounding",
-          "--disable-field-trial-config",
-          "--disable-hang-monitor",
-          "--disable-prompt-on-repost",
-          "--disable-default-apps",
-          "--hide-scrollbars",
-          "--mute-audio",
-          "--no-default-browser-check",
-          "--safebrowsing-disable-auto-update",
-          "--disable-background-networking",
-          "--disable-breakpad",
-          "--password-store=basic",
-          "--use-mock-keychain",
-          
-          // Extension-friendly arguments
-          "--enable-extensions",
-          "--disable-extensions-file-access-check",
-          "--disable-extensions-http-throttling",
-          "--enable-automation",
-          "--disable-blink-features=AutomationControlled",
-          
-          // CapSolver Extension configuration
-          "--disable-extensions-except=" + extensionPath,
+          "--no-zygote",
+          "--disable-gpu",
           "--load-extension=" + extensionPath,
           "--allowlisted-extension-id=pgojnojmmhpofjgdmaebadhbocahppod",
           
           // Enhanced permissions for extension
           "--enable-features=NetworkService,NetworkServiceLogging",
-          "--disable-features=VizDisplayCompositor",
-          
-          // Server-specific arguments (only if forced headless)
-          ...(shouldUseHeadless ? [
-            "--headless=new",
-            "--disable-gpu",
-            "--disable-gpu-sandbox",
-            "--disable-software-rasterizer",
-            "--virtual-time-budget=5000",
-            "--run-all-compositor-stages-before-draw"
-          ] : [
-            // Headed mode optimizations for extension
-            "--start-maximized",
-            "--disable-infobars",
-            "--disable-notifications",
-            "--disable-popup-blocking"
-          ])
+          "--disable-features=VizDisplayCompositor"
         ],
-        defaultViewport: shouldUseHeadless ? {
-          width: 1920,
-          height: 1080,
-        } : null, // Let browser use natural viewport in headed mode
+        defaultViewport:  null, // Let browser use natural viewport in headed mode
         slowMo: shouldUseHeadless ? 0 : 100, // Slower for extension interactions
         // Use actual Chrome executable instead of Chromium for better fingerprint
         executablePath: this.chromeExecutablePath,
