@@ -138,19 +138,15 @@ class Config {
             "--disable-software-rasterizer",
             "--disable-extensions",
             "--disable-plugins",
-            "--disable-images",
             "--disable-background-networking",
             "--disable-default-apps",
             "--disable-sync",
             "--disable-translate",
             "--disable-features=TranslateUI,BlinkGenPropertyTrees,VizDisplayCompositor",
-            "--run-all-compositor-stages-before-draw",
-            "--disable-threaded-animation",
-            "--disable-threaded-scrolling",
             "--disable-checker-imaging",
             "--disable-new-content-rendering-timeout",
-            "--disable-image-animation-resync",
-            "--virtual-time-budget=5000"
+            "--single-process",
+            "--no-zygote"
           ] : [
             "--disable-web-security",
             "--disable-features=VizDisplayCompositor",
@@ -169,9 +165,11 @@ class Config {
         slowMo: shouldUseHeadless ? 0 : 50,
         // Use actual Chrome executable instead of Chromium for better fingerprint
         executablePath: this.chromeExecutablePath,
-        // Force headless mode for server environment
+        // Connection settings for stable browser launch
+        timeout: 30000,
+        protocolTimeout: 30000,
         ...(shouldUseHeadless && {
-          pipe: true,
+          // Remove pipe setting that can cause target connection issues
           dumpio: false
         })
       }

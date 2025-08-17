@@ -28,9 +28,11 @@ async function quickTest() {
   try {
     console.log('🚀 Launching browser in headless mode...');
     
-    // Force headless configuration
+    // Force headless configuration with stable settings
     browser = await puppeteer.launch({
       headless: 'new',
+      timeout: 60000,
+      protocolTimeout: 60000,
       args: [
         '--no-sandbox',
         '--disable-setuid-sandbox',
@@ -46,9 +48,11 @@ async function quickTest() {
         '--disable-sync',
         '--disable-translate',
         '--disable-features=TranslateUI,BlinkGenPropertyTrees,VizDisplayCompositor',
-        '--virtual-time-budget=5000'
+        '--disable-checker-imaging',
+        '--disable-new-content-rendering-timeout',
+        '--single-process',
+        '--no-zygote'
       ],
-      pipe: true,
       dumpio: false
     });
     
