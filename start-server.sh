@@ -27,14 +27,26 @@ if [ ! -f "package.json" ]; then
     exit 1
 fi
 
-# Step 1: Start Xvfb
-print_status "Starting Xvfb virtual display..."
+# Step 1: Setup virtual display for browser automation
+print_status "Setting up virtual display for browser automation..."
 chmod +x start-xvfb.sh
-./start-xvfb.sh
 
-# Step 2: Set DISPLAY environment variable
-export DISPLAY=:99
-print_status "Display set to: $DISPLAY"
+if ./start-xvfb.sh; then
+    print_status "Virtual display setup completed"
+    
+    # Source the display environment
+    if [ -f /tmp/xvfb.display ]; then
+        DISPLAY_NUM=$(cat /tmp/xvfb.display)
+        export DISPLAY=:${DISPLAY_NUM}
+        print_status "Display set to: $DISPLAY"
+    else
+        export DISPLAY=:99
+        print_status "Display set to fallback: $DISPLAY"
+    fi
+else
+    print_warning "Virtual display setup failed, using headless mode"
+    # The Puppeteer config will automatically detect this and use headless mode
+fi
 
 # Step 3: Check Chrome
 print_status "Verifying Chrome installation..."

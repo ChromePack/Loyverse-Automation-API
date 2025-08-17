@@ -38,10 +38,14 @@ class BrowserService {
    */
   async launch() {
     try {
+      const isServerEnvironment = !process.env.DISPLAY && process.platform === 'linux';
+      
       Logger.info('Launching browser with configuration', {
         headless: config.puppeteer.headless,
         downloadPath: this.downloadPath,
-        userDataDir: config.paths.userData
+        userDataDir: config.paths.userData,
+        serverEnvironment: isServerEnvironment,
+        display: process.env.DISPLAY || 'not set'
       });
 
       // Ensure directories exist
@@ -55,7 +59,9 @@ class BrowserService {
       });
 
       this.isInitialized = true;
-      Logger.info('Browser launched successfully with session persistence');
+      
+      const mode = config.puppeteer.headless ? 'headless' : 'headed';
+      Logger.info(`Browser launched successfully in ${mode} mode with session persistence`);
 
       // Get the first tab (page) and store as default
       const pages = await this.browser.pages();

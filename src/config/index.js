@@ -83,12 +83,16 @@ class Config {
    * Implements Option 1 (Enhanced Manual CAPTCHA + Better Stealth) and Option 2 (Undetected-Chromedriver)
    */
   get puppeteer() {
+    // Detect if running in server environment (no DISPLAY)
+    const isServerEnvironment = !process.env.DISPLAY && process.platform === 'linux';
+    const shouldUseHeadless = isServerEnvironment || process.env.NODE_ENV === 'production';
+    
     return {
-      headless: false,
+      headless: shouldUseHeadless ? 'new' : false,
       downloadTimeout: parseInt(process.env.DOWNLOAD_TIMEOUT, 10) || 30000,
       navigationTimeout: parseInt(process.env.NAVIGATION_TIMEOUT, 10) || 30000,
       launchOptions: {
-        headless: false,
+        headless: shouldUseHeadless ? 'new' : false,
         userDataDir: this.paths.userData,
         args: [
           "--no-sandbox",
@@ -116,10 +120,7 @@ class Config {
           "--mute-audio",
           "--no-default-browser-check",
           "--safebrowsing-disable-auto-update",
-          "--disable-xvfb",
           "--disable-background-networking",
-          "--disable-background-timer-throttling",
-          "--disable-backgrounding-occluded-windows",
           "--disable-breakpad",
           "--disable-component-extensions-with-background-pages",
           "--disable-features=TranslateUI,BlinkGenPropertyTrees",
@@ -128,17 +129,25 @@ class Config {
           "--enable-features=NetworkService,NetworkServiceLogging",
           "--force-color-profile=srgb",
           "--metrics-recording-only",
-          "--no-first-run",
           "--password-store=basic",
           "--use-mock-keychain",
-          "--disable-extensions-except=" + path.join(__dirname, '..', '..', 'CapSolver.Browser.Extension'),
-          "--load-extension=" + path.join(__dirname, '..', '..', 'CapSolver.Browser.Extension')
+          // Additional args for server environment
+          ...(isServerEnvironment ? [
+            "--disable-extensions",
+            "--disable-plugins",
+            "--disable-images",
+            "--disable-javascript",
+            "--virtual-time-budget=5000"
+          ] : [
+            "--disable-extensions-except=" + path.join(__dirname, '..', '..', 'CapSolver.Browser.Extension'),
+            "--load-extension=" + path.join(__dirname, '..', '..', 'CapSolver.Browser.Extension')
+          ])
         ],
         defaultViewport: {
           width: 1920,
           height: 1080,
         },
-        slowMo: 50,
+        slowMo: shouldUseHeadless ? 0 : 50,
         // Use actual Chrome executable instead of Chromium for better fingerprint
         executablePath: this.chromeExecutablePath,
       }
