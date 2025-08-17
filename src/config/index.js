@@ -87,6 +87,14 @@ class Config {
     const isServerEnvironment = !process.env.DISPLAY && process.platform === 'linux';
     const shouldUseHeadless = isServerEnvironment || process.env.NODE_ENV === 'production';
     
+    console.log('🔍 Puppeteer Environment Check:', {
+      platform: process.platform,
+      display: process.env.DISPLAY || 'not set',
+      nodeEnv: process.env.NODE_ENV || 'not set',
+      isServerEnvironment,
+      shouldUseHeadless
+    });
+    
     return {
       headless: shouldUseHeadless ? 'new' : false,
       downloadTimeout: parseInt(process.env.DOWNLOAD_TIMEOUT, 10) || 30000,
@@ -95,15 +103,13 @@ class Config {
         headless: shouldUseHeadless ? 'new' : false,
         userDataDir: this.paths.userData,
         args: [
+          // Essential headless arguments
           "--no-sandbox",
-          "--disable-setuid-sandbox",
+          "--disable-setuid-sandbox", 
           "--disable-dev-shm-usage",
-          "--disable-accelerated-2d-canvas",
+          "--disable-gpu",
           "--no-first-run",
           "--no-zygote",
-          "--disable-gpu",
-          "--disable-web-security",
-          "--disable-features=VizDisplayCompositor",
           "--disable-background-timer-throttling",
           "--disable-backgrounding-occluded-windows",
           "--disable-renderer-backgrounding",
@@ -122,23 +128,36 @@ class Config {
           "--safebrowsing-disable-auto-update",
           "--disable-background-networking",
           "--disable-breakpad",
-          "--disable-component-extensions-with-background-pages",
-          "--disable-features=TranslateUI,BlinkGenPropertyTrees",
-          "--disable-ipc-flooding-protection",
-          "--disable-renderer-backgrounding",
-          "--enable-features=NetworkService,NetworkServiceLogging",
-          "--force-color-profile=srgb",
-          "--metrics-recording-only",
           "--password-store=basic",
           "--use-mock-keychain",
-          // Additional args for server environment
-          ...(isServerEnvironment ? [
+          
+          // Server-specific arguments
+          ...(shouldUseHeadless ? [
+            "--headless=new",
+            "--disable-gpu-sandbox",
+            "--disable-software-rasterizer",
             "--disable-extensions",
             "--disable-plugins",
             "--disable-images",
-            "--disable-javascript",
+            "--disable-background-networking",
+            "--disable-default-apps",
+            "--disable-sync",
+            "--disable-translate",
+            "--disable-features=TranslateUI,BlinkGenPropertyTrees,VizDisplayCompositor",
+            "--run-all-compositor-stages-before-draw",
+            "--disable-threaded-animation",
+            "--disable-threaded-scrolling",
+            "--disable-checker-imaging",
+            "--disable-new-content-rendering-timeout",
+            "--disable-image-animation-resync",
             "--virtual-time-budget=5000"
           ] : [
+            "--disable-web-security",
+            "--disable-features=VizDisplayCompositor",
+            "--disable-accelerated-2d-canvas",
+            "--enable-features=NetworkService,NetworkServiceLogging",
+            "--force-color-profile=srgb",
+            "--metrics-recording-only",
             "--disable-extensions-except=" + path.join(__dirname, '..', '..', 'CapSolver.Browser.Extension'),
             "--load-extension=" + path.join(__dirname, '..', '..', 'CapSolver.Browser.Extension')
           ])
@@ -150,6 +169,11 @@ class Config {
         slowMo: shouldUseHeadless ? 0 : 50,
         // Use actual Chrome executable instead of Chromium for better fingerprint
         executablePath: this.chromeExecutablePath,
+        // Force headless mode for server environment
+        ...(shouldUseHeadless && {
+          pipe: true,
+          dumpio: false
+        })
       }
     };
   }

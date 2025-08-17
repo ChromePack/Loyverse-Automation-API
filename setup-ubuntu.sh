@@ -49,30 +49,60 @@ echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" | sud
 sudo apt update
 sudo apt install -y google-chrome-stable
 
-# Install system dependencies
-print_status "Installing system dependencies..."
+# Install comprehensive system dependencies for Chrome headless
+print_status "Installing comprehensive system dependencies..."
 sudo apt install -y \
     ca-certificates \
     fonts-liberation \
+    fonts-dejavu-core \
+    fontconfig \
     libappindicator3-1 \
     libasound2 \
+    libatk1.0-0 \
     libatk-bridge2.0-0 \
+    libc6 \
+    libcairo2 \
+    libcairo-gobject2 \
+    libcups2 \
+    libdbus-1-3 \
     libdrm2 \
+    libexpat1 \
+    libfontconfig1 \
+    libgbm1 \
+    libgcc1 \
+    libgconf-2-4 \
+    libgdk-pixbuf2.0-0 \
+    libglib2.0-0 \
     libgtk-3-0 \
     libnspr4 \
     libnss3 \
+    libnss3-dev \
+    libpango-1.0-0 \
+    libpangocairo-1.0-0 \
+    libstdc++6 \
+    libx11-6 \
+    libx11-xcb1 \
+    libxcb1 \
     libxcomposite1 \
+    libxcursor1 \
     libxdamage1 \
+    libxext6 \
+    libxfixes3 \
+    libxi6 \
     libxrandr2 \
-    xdg-utils \
+    libxrender1 \
     libxss1 \
     libxtst6 \
-    libgbm1 \
     libxkbcommon0 \
     libxshmfence1 \
+    xdg-utils \
     xvfb \
     x11-utils \
-    x11-xserver-utils
+    x11-xserver-utils \
+    dbus-x11 \
+    gconf-service \
+    lsb-release \
+    wget
 
 # Install PM2 globally
 print_status "Installing PM2..."
@@ -97,10 +127,37 @@ yarn install --production
 print_status "Setting up PM2 startup..."
 pm2 startup
 
-print_status "Setup completed successfully!"
+# Test Chrome headless mode
+print_status "Testing Chrome in headless mode..."
+timeout 10s google-chrome-stable \
+    --headless=new \
+    --no-sandbox \
+    --disable-gpu \
+    --disable-dev-shm-usage \
+    --virtual-time-budget=5000 \
+    --dump-dom https://www.google.com > /dev/null 2>&1
+
+if [ $? -eq 0 ]; then
+    print_status "✅ Chrome headless test successful!"
+else
+    print_warning "⚠️ Chrome headless test failed - check dependencies"
+fi
+
+# Make scripts executable
+print_status "Making scripts executable..."
+chmod +x start-xvfb.sh
+chmod +x start-server.sh
+chmod +x quick-test.js
+
+print_status "✅ Setup completed successfully!"
 echo ""
-print_status "Next steps:"
-echo "1. Configure your environment variables"
-echo "2. Start the application: pm2 start ecosystem.config.js --env production"
-echo "3. Save PM2 configuration: pm2 save"
-echo "4. Check logs: pm2 logs loyverse-api"
+print_status "🎯 Next steps:"
+echo "1. Test browser launch: node quick-test.js"
+echo "2. Start the server: ./start-server.sh"
+echo "3. Check PM2 logs: pm2 logs loyverse-api"
+echo "4. Monitor server: pm2 monit"
+echo ""
+print_status "🔧 If you still get X server errors:"
+echo "1. Make sure NODE_ENV=production is set"
+echo "2. Run: export NODE_ENV=production && node quick-test.js"
+echo "3. Check Chrome dependencies: ldd \$(which google-chrome-stable) | grep 'not found'"
