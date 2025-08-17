@@ -14,7 +14,9 @@
     "format": "prettier --write src/",
     "format:check": "prettier --check src/",
     "test": "node test/test-browser-launch.js",
-    "test:browser": "node test/test-browser-launch.js"
+    "test:browser": "node test/test-browser-launch.js",
+    "test:extension": "node test/test-extension.js",
+    "test:simple": "node simple-browser-test.js"
   },
   "devDependencies": {
     "@types/node": "^24.0.14",

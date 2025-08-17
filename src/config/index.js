@@ -85,14 +85,18 @@ class Config {
   get puppeteer() {
     // Detect if running in server environment (no DISPLAY)
     const isServerEnvironment = !process.env.DISPLAY && process.platform === 'linux';
-    const shouldUseHeadless = isServerEnvironment || process.env.NODE_ENV === 'production';
+    // Force headed mode when using extensions for better compatibility
+    const shouldUseHeadless = isServerEnvironment && process.env.FORCE_HEADLESS === 'true';
+    const extensionPath = path.join(__dirname, '..', '..', 'CapSolver.Browser.Extension');
     
     console.log('🔍 Puppeteer Environment Check:', {
       platform: process.platform,
       display: process.env.DISPLAY || 'not set',
       nodeEnv: process.env.NODE_ENV || 'not set',
       isServerEnvironment,
-      shouldUseHeadless
+      shouldUseHeadless,
+      extensionPath,
+      forceHeadless: process.env.FORCE_HEADLESS || 'not set'
     });
     
     return {
@@ -103,25 +107,18 @@ class Config {
         headless: shouldUseHeadless ? 'new' : false,
         userDataDir: this.paths.userData,
         args: [
-          // Essential headless arguments
+          // Essential arguments for stability
           "--no-sandbox",
           "--disable-setuid-sandbox", 
           "--disable-dev-shm-usage",
-          "--disable-gpu",
           "--no-first-run",
-          "--no-zygote",
           "--disable-background-timer-throttling",
           "--disable-backgrounding-occluded-windows",
           "--disable-renderer-backgrounding",
           "--disable-field-trial-config",
-          "--disable-ipc-flooding-protection",
           "--disable-hang-monitor",
           "--disable-prompt-on-repost",
-          "--disable-client-side-phishing-detection",
-          "--disable-component-extensions-with-background-pages",
           "--disable-default-apps",
-          "--disable-sync",
-          "--disable-translate",
           "--hide-scrollbars",
           "--mute-audio",
           "--no-default-browser-check",
@@ -131,45 +128,51 @@ class Config {
           "--password-store=basic",
           "--use-mock-keychain",
           
-          // Server-specific arguments
+          // Extension-friendly arguments
+          "--enable-extensions",
+          "--disable-extensions-file-access-check",
+          "--disable-extensions-http-throttling",
+          "--enable-automation",
+          "--disable-blink-features=AutomationControlled",
+          
+          // CapSolver Extension configuration
+          "--disable-extensions-except=" + extensionPath,
+          "--load-extension=" + extensionPath,
+          "--allowlisted-extension-id=pgojnojmmhpofjgdmaebadhbocahppod",
+          
+          // Enhanced permissions for extension
+          "--enable-features=NetworkService,NetworkServiceLogging",
+          "--disable-features=VizDisplayCompositor",
+          
+          // Server-specific arguments (only if forced headless)
           ...(shouldUseHeadless ? [
             "--headless=new",
+            "--disable-gpu",
             "--disable-gpu-sandbox",
             "--disable-software-rasterizer",
-            "--disable-extensions",
-            "--disable-plugins",
-            "--disable-background-networking",
-            "--disable-default-apps",
-            "--disable-sync",
-            "--disable-translate",
-            "--disable-features=TranslateUI,BlinkGenPropertyTrees,VizDisplayCompositor",
-            "--disable-checker-imaging",
-            "--disable-new-content-rendering-timeout",
-            "--single-process",
-            "--no-zygote"
+            "--virtual-time-budget=5000",
+            "--run-all-compositor-stages-before-draw"
           ] : [
-            "--disable-web-security",
-            "--disable-features=VizDisplayCompositor",
-            "--disable-accelerated-2d-canvas",
-            "--enable-features=NetworkService,NetworkServiceLogging",
-            "--force-color-profile=srgb",
-            "--metrics-recording-only",
-            "--disable-extensions-except=" + path.join(__dirname, '..', '..', 'CapSolver.Browser.Extension'),
-            "--load-extension=" + path.join(__dirname, '..', '..', 'CapSolver.Browser.Extension')
+            // Headed mode optimizations for extension
+            "--start-maximized",
+            "--disable-infobars",
+            "--disable-notifications",
+            "--disable-popup-blocking"
           ])
         ],
-        defaultViewport: {
+        defaultViewport: shouldUseHeadless ? {
           width: 1920,
           height: 1080,
-        },
-        slowMo: shouldUseHeadless ? 0 : 50,
+        } : null, // Let browser use natural viewport in headed mode
+        slowMo: shouldUseHeadless ? 0 : 100, // Slower for extension interactions
         // Use actual Chrome executable instead of Chromium for better fingerprint
         executablePath: this.chromeExecutablePath,
         // Connection settings for stable browser launch
-        timeout: 30000,
-        protocolTimeout: 30000,
+        timeout: 60000, // Increased for extension loading
+        protocolTimeout: 60000,
+        // Extension-friendly settings
+        ignoreDefaultArgs: ['--enable-automation', '--disable-extensions'],
         ...(shouldUseHeadless && {
-          // Remove pipe setting that can cause target connection issues
           dumpio: false
         })
       }

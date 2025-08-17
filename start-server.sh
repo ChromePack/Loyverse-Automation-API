@@ -27,25 +27,39 @@ if [ ! -f "package.json" ]; then
     exit 1
 fi
 
-# Step 1: Setup virtual display for browser automation
-print_status "Setting up virtual display for browser automation..."
+# Step 1: Setup virtual display for browser automation with extension support
+print_status "Setting up virtual display for browser automation with extension support..."
 chmod +x start-xvfb.sh
 
-if ./start-xvfb.sh; then
-    print_status "Virtual display setup completed"
-    
-    # Source the display environment
-    if [ -f /tmp/xvfb.display ]; then
-        DISPLAY_NUM=$(cat /tmp/xvfb.display)
-        export DISPLAY=:${DISPLAY_NUM}
-        print_status "Display set to: $DISPLAY"
-    else
-        export DISPLAY=:99
-        print_status "Display set to fallback: $DISPLAY"
-    fi
+# Check if we want to force headless mode (for pure server environments)
+if [ "$FORCE_HEADLESS" = "true" ]; then
+    print_status "FORCE_HEADLESS is set, skipping display setup"
+    export FORCE_HEADLESS=true
 else
-    print_warning "Virtual display setup failed, using headless mode"
-    # The Puppeteer config will automatically detect this and use headless mode
+    if ./start-xvfb.sh; then
+        print_status "Virtual display setup completed"
+        
+        # Source the display environment
+        if [ -f /tmp/xvfb.display ]; then
+            DISPLAY_NUM=$(cat /tmp/xvfb.display)
+            export DISPLAY=:${DISPLAY_NUM}
+            print_status "Display set to: $DISPLAY"
+        else
+            export DISPLAY=:99
+            print_status "Display set to fallback: $DISPLAY"
+        fi
+        
+        # Test extension compatibility
+        print_status "Testing extension compatibility..."
+        if timeout 10s google-chrome-stable --display=$DISPLAY --load-extension=./CapSolver.Browser.Extension --headless=new --dump-dom https://www.google.com > /dev/null 2>&1; then
+            print_status "✅ Extension compatibility test passed"
+        else
+            print_warning "⚠️ Extension compatibility test failed, but continuing..."
+        fi
+    else
+        print_warning "Virtual display setup failed"
+        print_status "You can force headless mode by setting: export FORCE_HEADLESS=true"
+    fi
 fi
 
 # Step 3: Check Chrome
