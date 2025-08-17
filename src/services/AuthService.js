@@ -473,8 +473,15 @@ class AuthService {
 
       // Handle cookie consent before login
       await this.handleCookieConsent(page);
-      // Click login button
-      await this.humanLikeClick(page, SELECTORS.LOGIN.LOGIN_BUTTON);
+
+      // Debug login button before clicking
+      await this.debugLoginButton(page);
+
+      Logger.info('Click on login Button');
+      // Click login button with enhanced debugging
+      await this.clickLoginButtonWithDebug(page);
+
+      Logger.info('Waiting for login success');
 
       // Check for CAPTCHA immediately after clicking login
       // const captchaDetected = await this.detectCaptcha(page);
@@ -781,6 +788,182 @@ class AuthService {
   resetAuthenticationState() {
     this.isAuthenticated = false;
     Logger.info('Authentication state reset');
+  }
+
+  /**
+   * Debug login button state and properties
+   * @param {Page} page - Puppeteer page instance
+   * @returns {Promise<void>}
+   */
+  async debugLoginButton(page) {
+    try {
+      Logger.info('🔍 Debugging login button state...');
+      
+      const selector = SELECTORS.LOGIN.LOGIN_BUTTON;
+      const button = await page.$(selector);
+      
+      if (button) {
+        const buttonInfo = await page.evaluate(btn => ({
+          text: btn.textContent?.trim(),
+          type: btn.type,
+          disabled: btn.disabled,
+          className: btn.className,
+          id: btn.id,
+          offsetWidth: btn.offsetWidth,
+          offsetHeight: btn.offsetHeight,
+          style: btn.style.cssText
+        }), button);
+        
+        const boundingBox = await button.boundingBox();
+        const isVisible = await button.isIntersectingViewport();
+        
+        Logger.info('🔘 Login button details:', {
+          found: true,
+          visible: isVisible,
+          position: boundingBox,
+          properties: buttonInfo
+        });
+        
+        // Check if button is covered
+        if (boundingBox) {
+          const centerX = boundingBox.x + boundingBox.width / 2;
+          const centerY = boundingBox.y + boundingBox.height / 2;
+          
+          const elementAtCenter = await page.evaluate((x, y) => {
+            const el = document.elementFromPoint(x, y);
+            return el ? {
+              tagName: el.tagName,
+              className: el.className,
+              id: el.id
+            } : null;
+          }, centerX, centerY);
+          
+          Logger.info('🎯 Element at button center:', elementAtCenter);
+        }
+        
+      } else {
+        Logger.error('❌ Login button not found with selector:', selector);
+        
+        // Find all buttons on page for debugging
+        const allButtons = await page.$$eval('button', buttons => 
+          buttons.map(btn => ({
+            text: btn.textContent?.trim(),
+            type: btn.type,
+            className: btn.className,
+            id: btn.id
+          }))
+        );
+        
+        Logger.info('🔘 All buttons on page:', allButtons);
+      }
+      
+    } catch (error) {
+      Logger.error('Login button debug failed:', error.message);
+    }
+  }
+
+  /**
+   * Click login button with enhanced debugging and multiple methods
+   * @param {Page} page - Puppeteer page instance
+   * @returns {Promise<void>}
+   */
+  async clickLoginButtonWithDebug(page) {
+    try {
+      const selector = SELECTORS.LOGIN.LOGIN_BUTTON;
+      const button = await page.$(selector);
+      
+      if (!button) {
+        throw new Error('Login button not found');
+      }
+      
+      // Method 1: Try human-like click
+      Logger.info('🔘 Attempting Method 1: Human-like click');
+      try {
+        await this.humanLikeClick(page, selector);
+        await page.waitForTimeout(1000);
+        
+        // Check for immediate response
+        const urlChanged = page.url() !== 'https://loyverse.com/en/login';
+        const hasError = await page.$(SELECTORS.LOGIN.ERROR_MESSAGE);
+        
+        Logger.info('🔘 Method 1 result:', { urlChanged, hasError: !!hasError });
+        
+        if (urlChanged || hasError) {
+          Logger.info('✅ Method 1 successful - got response');
+          return;
+        }
+      } catch (error) {
+        Logger.warn('🔘 Method 1 failed:', error.message);
+      }
+      
+      // Method 2: Try direct click
+      Logger.info('🔘 Attempting Method 2: Direct click');
+      try {
+        await button.click();
+        await page.waitForTimeout(1000);
+        
+        const urlChanged = page.url() !== 'https://loyverse.com/en/login';
+        const hasError = await page.$(SELECTORS.LOGIN.ERROR_MESSAGE);
+        
+        Logger.info('🔘 Method 2 result:', { urlChanged, hasError: !!hasError });
+        
+        if (urlChanged || hasError) {
+          Logger.info('✅ Method 2 successful - got response');
+          return;
+        }
+      } catch (error) {
+        Logger.warn('🔘 Method 2 failed:', error.message);
+      }
+      
+      // Method 3: Try JavaScript click
+      Logger.info('🔘 Attempting Method 3: JavaScript click');
+      try {
+        await page.evaluate(btn => btn.click(), button);
+        await page.waitForTimeout(1000);
+        
+        const urlChanged = page.url() !== 'https://loyverse.com/en/login';
+        const hasError = await page.$(SELECTORS.LOGIN.ERROR_MESSAGE);
+        
+        Logger.info('🔘 Method 3 result:', { urlChanged, hasError: !!hasError });
+        
+        if (urlChanged || hasError) {
+          Logger.info('✅ Method 3 successful - got response');
+          return;
+        }
+      } catch (error) {
+        Logger.warn('🔘 Method 3 failed:', error.message);
+      }
+      
+      // Method 4: Try form submission
+      Logger.info('🔘 Attempting Method 4: Form submission');
+      try {
+        await page.evaluate(() => {
+          const form = document.querySelector('form[name="loginForm"]');
+          if (form) {
+            form.submit();
+          }
+        });
+        await page.waitForTimeout(1000);
+        
+        const urlChanged = page.url() !== 'https://loyverse.com/en/login';
+        const hasError = await page.$(SELECTORS.LOGIN.ERROR_MESSAGE);
+        
+        Logger.info('🔘 Method 4 result:', { urlChanged, hasError: !!hasError });
+        
+        if (urlChanged || hasError) {
+          Logger.info('✅ Method 4 successful - got response');
+          return;
+        }
+      } catch (error) {
+        Logger.warn('🔘 Method 4 failed:', error.message);
+      }
+      
+      Logger.error('❌ All click methods failed');
+      
+    } catch (error) {
+      Logger.error('Enhanced login button click failed:', error.message);
+      throw error;
+    }
   }
 
   /**
