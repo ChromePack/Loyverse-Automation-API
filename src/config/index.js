@@ -107,32 +107,31 @@ class Config {
         headless: shouldUseHeadless ? 'new' : false,
         userDataDir: this.paths.userData,
         args: [
-                    "--no-sandbox",
-          "--disable-setuid-sandbox",
+          "--no-sandbox",
           "--disable-dev-shm-usage",
           "--disable-accelerated-2d-canvas",
           "--no-first-run",
           "--no-zygote",
           "--disable-gpu",
           "--load-extension=" + extensionPath,
-          "--allowlisted-extension-id=pgojnojmmhpofjgdmaebadhbocahppod",
+          // "--allowlisted-extension-id=pgojnojmmhpofjgdmaebadhbocahppod",
           
           // Enhanced permissions for extension
           "--enable-features=NetworkService,NetworkServiceLogging",
-          "--disable-features=VizDisplayCompositor"
+          // "--disable-features=VizDisplayCompositor"
         ],
         defaultViewport:  null, // Let browser use natural viewport in headed mode
-        slowMo: shouldUseHeadless ? 0 : 100, // Slower for extension interactions
+        slowMo: 50, // Slower for extension interactions
         // Use actual Chrome executable instead of Chromium for better fingerprint
         executablePath: this.chromeExecutablePath,
         // Connection settings for stable browser launch
         timeout: 60000, // Increased for extension loading
         protocolTimeout: 60000,
         // Extension-friendly settings
-        ignoreDefaultArgs: ['--enable-automation', '--disable-extensions'],
-        ...(shouldUseHeadless && {
-          dumpio: false
-        })
+        // ignoreDefaultArgs: ['--enable-automation', '--disable-extensions'],
+        // ...(shouldUseHeadless && {
+        //   dumpio: false
+        // })
       }
     };
   }
