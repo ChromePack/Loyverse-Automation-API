@@ -8,48 +8,8 @@ const { executablePath } = require('puppeteer');
  */
 class Config {
   constructor() {
-    this.validateRequiredEnvVars();
     // Try multiple Chrome paths for different Ubuntu installations
-    this.chromeExecutablePath = this.getChromeExecutablePath();
-  }
-
-  /**
-   * Get Chrome executable path for Ubuntu
-   * @returns {string} Chrome executable path
-   */
-  getChromeExecutablePath() {
-    const possiblePaths = [
-      '/usr/bin/google-chrome-stable',
-      '/usr/bin/google-chrome',
-      '/opt/google/chrome/google-chrome',
-      '/usr/bin/chromium-browser',
-      '/usr/bin/chromium'
-    ];
-
-    // Check if any of these paths exist
-    for (const path of possiblePaths) {
-      try {
-        const fs = require('fs');
-        if (fs.existsSync(path)) {
-          console.log(`✅ Found Chrome at: ${path}`);
-          return path;
-        }
-      } catch (error) {
-        continue;
-      }
-    }
-
-    console.warn('⚠️ Chrome not found in standard paths, using default');
-    return '/usr/bin/google-chrome-stable';
-  }
-
-  /**
-   * Validates that all required environment variables are present
-   * @throws {Error} If required environment variables are missing
-   */
-  validateRequiredEnvVars() {
-    // Credentials are now hardcoded, no validation needed
-    console.log('✅ Credentials validation skipped - using hardcoded values');
+    this.chromeExecutablePath = "/opt/google/chrome/google-chrome";
   }
 
   /**
@@ -75,9 +35,6 @@ class Config {
     };
   }
 
-  /**
-   * Enhanced Puppeteer configuration with anti-detection measures
-   */
   /**
    * Enhanced Puppeteer configuration with advanced anti-detection measures
    * Implements Option 1 (Enhanced Manual CAPTCHA + Better Stealth) and Option 2 (Undetected-Chromedriver)
@@ -108,19 +65,23 @@ class Config {
         userDataDir: this.paths.userData,
         args: [
           "--no-sandbox",
+          "--disable-setuid-sandbox",
           "--disable-dev-shm-usage",
           "--disable-accelerated-2d-canvas",
           "--no-first-run",
           "--no-zygote",
           "--disable-gpu",
-          "--load-extension=" + extensionPath,
+          //"--load-extension=" + extensionPath,
           // "--allowlisted-extension-id=pgojnojmmhpofjgdmaebadhbocahppod",
           
           // Enhanced permissions for extension
-          "--enable-features=NetworkService,NetworkServiceLogging",
+          //"--enable-features=NetworkService,NetworkServiceLogging",
           // "--disable-features=VizDisplayCompositor"
         ],
-        defaultViewport:  null, // Let browser use natural viewport in headed mode
+        defaultViewport: {
+          width: 1920,
+          height: 1080,
+        }, // Let browser use natural viewport in headed mode
         slowMo: 50, // Slower for extension interactions
         // Use actual Chrome executable instead of Chromium for better fingerprint
         executablePath: this.chromeExecutablePath,
