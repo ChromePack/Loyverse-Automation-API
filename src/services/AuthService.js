@@ -342,6 +342,9 @@ class AuthService {
         timeout: config.timeouts.navigation
       });
 
+      // Ensure page is ready for interaction
+      await this.browserService.ensurePageReady(page);
+
       // Wait for login form to be visible
       await page.waitForSelector(SELECTORS.LOGIN.LOGIN_FORM, {
         visible: true,
@@ -876,27 +879,54 @@ class AuthService {
         throw new Error('Login button not found');
       }
       
-      // Method 1: Try human-like click
-      Logger.info('🔘 Attempting Method 1: Human-like click');
+      // Method 1: Enhanced VNC-compatible click with focus
+      Logger.info('🔘 Attempting Method 1: Enhanced VNC click');
       try {
-        await this.humanLikeClick(page, selector);
-        await page.waitForTimeout(1000);
+        // Ensure button is in viewport
+        await button.scrollIntoView();
+        await page.waitForTimeout(500);
         
-        // Check for immediate response
-        const urlChanged = page.url() !== 'https://loyverse.com/en/login';
-        const hasError = await page.$(SELECTORS.LOGIN.ERROR_MESSAGE);
+        // Focus on the button first
+        await page.evaluate((sel) => {
+          const btn = document.querySelector(sel);
+          if (btn) {
+            btn.focus();
+            btn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+        }, selector);
         
-        Logger.info('🔘 Method 1 result:', { urlChanged, hasError: !!hasError });
+        await page.waitForTimeout(500);
         
-        if (urlChanged || hasError) {
-          Logger.info('✅ Method 1 successful - got response');
-          return;
+        // Get button position and click with coordinates
+        const box = await button.boundingBox();
+        if (box) {
+          const x = box.x + box.width / 2;
+          const y = box.y + box.height / 2;
+          
+          Logger.info('🖱️ Clicking at coordinates:', { x, y });
+          
+          // Move mouse to button and click
+          await page.mouse.move(x, y);
+          await page.waitForTimeout(200);
+          await page.mouse.click(x, y);
+          await page.waitForTimeout(1000);
+          
+          // Check for response
+          const urlChanged = page.url() !== 'https://loyverse.com/en/login';
+          const hasError = await page.$(SELECTORS.LOGIN.ERROR_MESSAGE);
+          
+          Logger.info('🔘 Method 1 result:', { urlChanged, hasError: !!hasError });
+          
+          if (urlChanged || hasError) {
+            Logger.info('✅ Method 1 successful - got response');
+            return;
+          }
         }
       } catch (error) {
         Logger.warn('🔘 Method 1 failed:', error.message);
       }
       
-      // Method 2: Try direct click
+      // Method 2: Direct element click
       Logger.info('🔘 Attempting Method 2: Direct click');
       try {
         await button.click();

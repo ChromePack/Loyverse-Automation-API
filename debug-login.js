@@ -166,7 +166,7 @@ class LoginDebugger {
     Logger.info(`✅ Email filled: "${emailValue}"`);
     
     // Small delay
-    await this.page.waitForTimeout(500);
+    await (this.page.waitForTimeout ? this.page.waitForTimeout(500) : new Promise(resolve => setTimeout(resolve, 500)));
     
     // Fill password
     Logger.info('🔑 Filling password field...');
@@ -209,7 +209,7 @@ class LoginDebugger {
         if (isVisible) {
           Logger.info('🍪 Clicking cookie consent button...');
           await cookieButton.click();
-          await this.page.waitForTimeout(2000);
+          await this.page.waitForTimeout ? this.page.waitForTimeout(2000) : new Promise(resolve => setTimeout(resolve, 2000));
           Logger.info('✅ Cookie consent button clicked');
           
           // Verify it's gone
@@ -332,7 +332,7 @@ class LoginDebugger {
         // Try multiple click methods
         Logger.info('🔘 Method 1: Regular click');
         await loginButton.click();
-        await this.page.waitForTimeout(1000);
+        await (this.page.waitForTimeout ? this.page.waitForTimeout(1000) : new Promise(resolve => setTimeout(resolve, 1000)));
         
         // Check for immediate changes
         await this.checkForChanges();
@@ -341,7 +341,7 @@ class LoginDebugger {
         Logger.info('🔘 Method 2: Force click with coordinates');
         const rect = await loginButton.boundingBox();
         await this.page.mouse.click(rect.x + rect.width/2, rect.y + rect.height/2);
-        await this.page.waitForTimeout(1000);
+        await (this.page.waitForTimeout ? this.page.waitForTimeout(1000) : new Promise(resolve => setTimeout(resolve, 1000)));
         
         // Check for changes again
         await this.checkForChanges();
@@ -349,7 +349,7 @@ class LoginDebugger {
         // Try JavaScript click
         Logger.info('🔘 Method 3: JavaScript click');
         await this.page.evaluate(btn => btn.click(), loginButton);
-        await this.page.waitForTimeout(1000);
+        await (this.page.waitForTimeout ? this.page.waitForTimeout(1000) : new Promise(resolve => setTimeout(resolve, 1000)));
         
         // Final check
         await this.checkForChanges();
@@ -418,15 +418,15 @@ class LoginDebugger {
 
 // Main execution
 async function runLoginDebug() {
-  const debugger = new LoginDebugger();
+  const loginDebugger = new LoginDebugger();
   
   try {
-    await debugger.initialize();
-    await debugger.debugLoginProcess();
+    await loginDebugger.initialize();
+    await loginDebugger.debugLoginProcess();
   } catch (error) {
     Logger.error('Debug failed:', error);
   } finally {
-    await debugger.cleanup();
+    await loginDebugger.cleanup();
   }
 }
 

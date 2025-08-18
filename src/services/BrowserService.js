@@ -177,12 +177,65 @@ class BrowserService {
         'Pragma': 'no-cache'
       });
 
+      // Configure page for better interaction in VNC environment
+      await page.evaluateOnNewDocument(() => {
+        // Override navigator properties to avoid detection
+        Object.defineProperty(navigator, 'webdriver', {
+          get: () => undefined,
+        });
+        
+        // Fix viewport and device properties
+        Object.defineProperty(screen, 'width', { get: () => 1920 });
+        Object.defineProperty(screen, 'height', { get: () => 1080 });
+        
+        // Ensure proper event handling
+        window.addEventListener('DOMContentLoaded', () => {
+          document.body.style.cursor = 'default';
+        });
+      });
+
+      // Enable better mouse interactions for VNC
+      await client.send('Input.setIgnoreInputEvents', { ignore: false });
+
       Logger.debug('Page download configuration completed');
     } catch (error) {
       Logger.error('Failed to configure page downloads', {
         error: error.message
       });
       throw new Error(`Download configuration failed: ${error.message}`);
+    }
+  }
+
+  /**
+   * Ensure page is ready for interaction
+   * @param {Page} page - Puppeteer page instance
+   * @returns {Promise<void>}
+   */
+  async ensurePageReady(page) {
+    try {
+      // Wait for page to be fully loaded
+      await page.waitForLoadState?.('networkidle') || page.waitForTimeout(2000);
+      
+      // Ensure DOM is ready and interactive
+      await page.waitForFunction(() => {
+        return document.readyState === 'complete' && 
+               document.body !== null &&
+               window.innerWidth > 0 &&
+               window.innerHeight > 0;
+      }, { timeout: 10000 });
+      
+      // Enable cursor and focus
+      await page.evaluate(() => {
+        if (document.body) {
+          document.body.style.cursor = 'default';
+          document.body.style.pointerEvents = 'auto';
+        }
+      });
+
+      Logger.debug('Page is ready for interaction');
+    } catch (error) {
+      Logger.warn('Page readiness check failed', { error: error.message });
+      // Don't throw - continue with interaction attempt
     }
   }
 

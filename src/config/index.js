@@ -8,8 +8,73 @@ const { executablePath } = require('puppeteer');
  */
 class Config {
   constructor() {
-    // Try multiple Chrome paths for different Ubuntu installations
-    this.chromeExecutablePath = "/opt/google/chrome/google-chrome";
+    // Detect Chrome executable path based on platform
+    this.chromeExecutablePath = this.detectChromeExecutable();
+  }
+
+  /**
+   * Detect Chrome executable path based on platform
+   * @returns {string|undefined} Chrome executable path
+   */
+  detectChromeExecutable() {
+    const platform = process.platform;
+    
+    if (platform === 'win32') {
+      // Windows Chrome paths
+      const windowsPaths = [
+        'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+        'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
+        process.env.LOCALAPPDATA + '\\Google\\Chrome\\Application\\chrome.exe'
+      ];
+      
+      for (const chromePath of windowsPaths) {
+        try {
+          const fs = require('fs');
+          if (fs.existsSync(chromePath)) {
+            console.log('🔍 Found Chrome at:', chromePath);
+            return chromePath;
+          }
+        } catch (error) {
+          // Continue checking other paths
+        }
+      }
+    } else if (platform === 'linux') {
+      // Linux Chrome paths
+      const linuxPaths = [
+        '/opt/google/chrome/google-chrome',
+        '/usr/bin/google-chrome',
+        '/usr/bin/google-chrome-stable',
+        '/snap/bin/chromium',
+        '/usr/bin/chromium-browser'
+      ];
+      
+      for (const chromePath of linuxPaths) {
+        try {
+          const fs = require('fs');
+          if (fs.existsSync(chromePath)) {
+            console.log('🔍 Found Chrome at:', chromePath);
+            return chromePath;
+          }
+        } catch (error) {
+          // Continue checking other paths
+        }
+      }
+    } else if (platform === 'darwin') {
+      // macOS Chrome path
+      const macPath = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
+      try {
+        const fs = require('fs');
+        if (fs.existsSync(macPath)) {
+          console.log('🔍 Found Chrome at:', macPath);
+          return macPath;
+        }
+      } catch (error) {
+        // Fall back to default
+      }
+    }
+    
+    console.log('⚠️ Chrome executable not found, using default Puppeteer Chromium');
+    return undefined; // Let Puppeteer use its bundled Chromium
   }
 
   /**
@@ -67,32 +132,36 @@ class Config {
           "--no-sandbox",
           "--disable-setuid-sandbox",
           "--disable-dev-shm-usage",
-          "--disable-accelerated-2d-canvas",
           "--no-first-run",
           "--no-zygote",
-          "--disable-gpu",
-          //"--load-extension=" + extensionPath,
-          // "--allowlisted-extension-id=pgojnojmmhpofjgdmaebadhbocahppod",
-          
-          // Enhanced permissions for extension
-          //"--enable-features=NetworkService,NetworkServiceLogging",
-          // "--disable-features=VizDisplayCompositor"
+          "--disable-blink-features=AutomationControlled",
+          "--disable-infobars",
+          "--disable-extensions-except=" + extensionPath,
+          "--load-extension=" + extensionPath,
+          "--allowlisted-extension-id=pgojnojmmhpofjgdmaebadhbocahppod",
+          "--disable-web-security",
+          "--disable-features=VizDisplayCompositor",
+          "--enable-features=NetworkService",
+          "--remote-debugging-port=9222",
+          "--window-size=1920,1080",
+          // Critical for VNC/Xvfb environment
+          "--display=" + (process.env.DISPLAY || ":1"),
+          "--use-gl=swiftshader",
+          "--disable-software-rasterizer",
+          "--disable-background-timer-throttling",
+          "--disable-backgrounding-occluded-windows",
+          "--disable-renderer-backgrounding",
+          "--disable-field-trial-config",
+          "--disable-ipc-flooding-protection"
         ],
-        defaultViewport: {
-          width: 1920,
-          height: 1080,
-        }, // Let browser use natural viewport in headed mode
-        slowMo: 50, // Slower for extension interactions
-        // Use actual Chrome executable instead of Chromium for better fingerprint
+        defaultViewport: null, // Use natural browser viewport
+        slowMo: 100, // Slower for better interactions
         executablePath: this.chromeExecutablePath,
-        // Connection settings for stable browser launch
-        timeout: 60000, // Increased for extension loading
-        protocolTimeout: 60000,
-        // Extension-friendly settings
-        // ignoreDefaultArgs: ['--enable-automation', '--disable-extensions'],
-        // ...(shouldUseHeadless && {
-        //   dumpio: false
-        // })
+        timeout: 120000, // Increased timeout
+        protocolTimeout: 120000,
+        ignoreDefaultArgs: ['--enable-automation'],
+        ignoreHTTPSErrors: true,
+        devtools: false
       }
     };
   }
