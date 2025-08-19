@@ -1,9 +1,8 @@
-const puppeteer = require('puppeteer-extra');
-const StealthPlugin = require('puppeteer-extra-plugin-stealth');
-// const RecaptchaPlugin = require('puppeteer-extra-plugin-recaptcha');
-
-// Use stealth plugin to avoid detection
-puppeteer.use(StealthPlugin());
+// Use regular puppeteer for extension compatibility
+const puppeteer = require('puppeteer');
+const fs = require('fs').promises;
+const path = require('path');
+const config = require('../config');
 
 // Use reCAPTCHA plugin for enhanced CAPTCHA handling
   // puppeteer.use(RecaptchaPlugin({
@@ -14,9 +13,6 @@ puppeteer.use(StealthPlugin());
   //   visualFeedback: true // Show visual feedback during solving
   // }));
 
-const fs = require('fs').promises;
-const path = require('path');
-const config = require('../config');
 const { Logger } = require('../utils/logger');
 
 /**
@@ -62,6 +58,8 @@ class BrowserService {
       
       const mode = config.puppeteer.headless ? 'headless' : 'headed';
       Logger.info(`Browser launched successfully in ${mode} mode with session persistence`);
+
+      // Extensions should load automatically with correct configuration
 
       // Get the first tab (page) and store as default
       const pages = await this.browser.pages();
@@ -179,18 +177,66 @@ class BrowserService {
 
       // Configure page for better interaction in VNC environment
       await page.evaluateOnNewDocument(() => {
-        // Override navigator properties to avoid detection
-        Object.defineProperty(navigator, 'webdriver', {
-          get: () => undefined,
-        });
+        // Enhanced webdriver property handling - avoid redefinition errors
+        try {
+          if (!navigator.hasOwnProperty('webdriver')) {
+            Object.defineProperty(navigator, 'webdriver', {
+              get: () => undefined,
+              configurable: true
+            });
+          } else {
+            // If already defined, just delete it
+            delete navigator.webdriver;
+          }
+        } catch (e) {
+          // Ignore redefinition errors
+        }
+
+        // Additional stealth measures
+        try {
+          Object.defineProperty(navigator, 'plugins', {
+            get: () => [1, 2, 3, 4, 5],
+            configurable: true
+          });
+          
+          Object.defineProperty(navigator, 'languages', {
+            get: () => ['en-US', 'en'],
+            configurable: true
+          });
+
+          // Chrome runtime detection bypass
+          if (window.chrome) {
+            Object.defineProperty(window.chrome, 'runtime', {
+              get: () => ({
+                onConnect: undefined,
+                onMessage: undefined
+              }),
+              configurable: true
+            });
+          }
+        } catch (e) {
+          // Ignore errors
+        }
         
         // Fix viewport and device properties
-        Object.defineProperty(screen, 'width', { get: () => 1920 });
-        Object.defineProperty(screen, 'height', { get: () => 1080 });
+        try {
+          Object.defineProperty(screen, 'width', { get: () => 1920, configurable: true });
+          Object.defineProperty(screen, 'height', { get: () => 1080, configurable: true });
+        } catch (e) {
+          // Ignore errors
+        }
         
         // Ensure proper event handling
         window.addEventListener('DOMContentLoaded', () => {
-          document.body.style.cursor = 'default';
+          if (document.body) {
+            document.body.style.cursor = 'default';
+          }
+        });
+
+        // Add CapSolver extension detection helper
+        window.addEventListener('load', () => {
+          // Mark that we expect CapSolver to be loaded
+          window.capsolverExpected = true;
         });
       });
 
@@ -454,6 +500,174 @@ class BrowserService {
         error: error.message
       });
       return null;
+    }
+  }
+
+  /**
+   * Enable developer mode for extensions
+   * @returns {Promise<boolean>} True if developer mode was enabled
+   */
+  async enableDeveloperMode() {
+    try {
+      if (!this.isInitialized || !this.browser) {
+        await this.launch();
+      }
+
+      Logger.info('Enabling developer mode for extensions...');
+      
+      const extensionsPage = await this.browser.newPage();
+      await extensionsPage.goto('chrome://extensions/', { waitUntil: 'domcontentloaded' });
+      
+      // Wait for page to load
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      // Check current developer mode status
+      const devModeStatus = await extensionsPage.evaluate(() => {
+        const toggle = document.querySelector('cr-toggle[slot="developer-toggle"]');
+        return toggle ? toggle.checked : null;
+      });
+      
+      Logger.info('Current developer mode status:', { enabled: devModeStatus });
+      
+      if (devModeStatus === false) {
+        Logger.info('Developer mode is disabled, enabling it...');
+        
+        await extensionsPage.evaluate(() => {
+          const toggle = document.querySelector('cr-toggle[slot="developer-toggle"]');
+          if (toggle) {
+            toggle.click();
+          }
+        });
+        
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        // Verify it was enabled
+        const newStatus = await extensionsPage.evaluate(() => {
+          const toggle = document.querySelector('cr-toggle[slot="developer-toggle"]');
+          return toggle ? toggle.checked : null;
+        });
+        
+        Logger.info('Developer mode after enabling:', { enabled: newStatus });
+        
+        await extensionsPage.close();
+        return newStatus === true;
+      }
+      
+      await extensionsPage.close();
+      return true;
+      
+    } catch (error) {
+      Logger.error('Failed to enable developer mode', { error: error.message });
+      return false;
+    }
+  }
+
+  /**
+   * Check if extensions are loaded properly
+   * @param {Page} page - Puppeteer page instance
+   * @returns {Promise<Object>} Extension status information
+   */
+  async checkExtensions(page) {
+    try {
+      const extensionInfo = await page.evaluate(() => {
+        const info = {
+          capsolverFound: false,
+          extensionCount: 0,
+          chromeRuntimeExists: !!window.chrome?.runtime,
+          extensionDetails: [],
+          capsolverScripts: [],
+          injectedScripts: []
+        };
+
+        // Check for CapSolver specific markers
+        if (window.capsolver || 
+            document.querySelector('[data-capsolver]') ||
+            document.querySelector('meta[name="capsolver-extension"]')) {
+          info.capsolverFound = true;
+        }
+
+        // Check for CapSolver extension scripts (more reliable detection)
+        const scripts = Array.from(document.querySelectorAll('script'));
+        scripts.forEach(script => {
+          if (script.src) {
+            info.injectedScripts.push(script.src);
+            // CapSolver extension ID is pgojnojmmhpofjgdmaebadhbocahppod
+            if (script.src.includes('chrome-extension://pgojnojmmhpofjgdmaebadhbocahppod') ||
+                script.src.includes('capsolver')) {
+              info.capsolverScripts.push(script.src);
+              info.capsolverFound = true;
+            }
+          }
+        });
+
+        // Check for extension content scripts markers
+        if (document.documentElement.hasAttribute('data-capsolver') ||
+            document.querySelector('[class*="capsolver"]') ||
+            document.querySelector('[id*="capsolver"]')) {
+          info.capsolverFound = true;
+        }
+
+        // Enhanced extension script detection - check all extension://* scripts
+        const extensionScripts = info.injectedScripts.filter(src => 
+          src.includes('chrome-extension://') || src.includes('extension://')
+        );
+        
+        // Update extension scripts list
+        if (extensionScripts.length > 0) {
+          info.extensionCount = 1; // We know we have at least one extension
+          
+          // Check specifically for CapSolver extension ID
+          const capsolverExtensionScripts = extensionScripts.filter(src =>
+            src.includes('pgojnojmmhpofjgdmaebadhbocahppod')
+          );
+          
+          if (capsolverExtensionScripts.length > 0) {
+            info.capsolverFound = true;
+            info.capsolverScripts = capsolverExtensionScripts;
+          }
+        }
+        
+        // Override capsolverScripts with the correct detection from extension scripts
+        const allCapsolverScripts = info.injectedScripts.filter(src =>
+          src.includes('chrome-extension://pgojnojmmhpofjgdmaebadhbocahppod')
+        );
+        
+        if (allCapsolverScripts.length > 0) {
+          info.capsolverFound = true;
+          info.capsolverScripts = allCapsolverScripts;
+          info.extensionCount = 1;
+        }
+
+        // Check chrome.runtime.getManifest if available
+        if (window.chrome?.runtime?.getManifest) {
+          try {
+            const manifest = chrome.runtime.getManifest();
+            if (manifest) {
+              info.extensionDetails.push({
+                name: manifest.name,
+                version: manifest.version,
+                id: chrome.runtime.id
+              });
+              info.extensionCount++;
+              
+              // Check if this is CapSolver
+              if (manifest.name && manifest.name.toLowerCase().includes('capsolver')) {
+                info.capsolverFound = true;
+              }
+            }
+          } catch (e) {
+            // Extension context may not be available in content script
+          }
+        }
+
+        return info;
+      });
+
+      Logger.info('Extension check completed', extensionInfo);
+      return extensionInfo;
+    } catch (error) {
+      Logger.error('Failed to check extensions', { error: error.message });
+      return { error: error.message };
     }
   }
 

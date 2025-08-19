@@ -478,11 +478,12 @@ class AuthService {
       await this.handleCookieConsent(page);
 
       // Debug login button before clicking
-      await this.debugLoginButton(page);
+      //await this.debugLoginButton(page);
 
-      Logger.info('Click on login Button');
+      //Logger.info('Click on login Button');
       // Click login button with enhanced debugging
-      await this.clickLoginButtonWithDebug(page);
+      //await this.clickLoginButtonWithDebug(page);
+      await this.humanLikeClick(page, SELECTORS.LOGIN.LOGIN_BUTTON);
 
       Logger.info('Waiting for login success');
 

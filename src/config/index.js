@@ -126,42 +126,24 @@ class Config {
       downloadTimeout: parseInt(process.env.DOWNLOAD_TIMEOUT, 10) || 30000,
       navigationTimeout: parseInt(process.env.NAVIGATION_TIMEOUT, 10) || 30000,
       launchOptions: {
-        headless: shouldUseHeadless ? 'new' : false,
-        userDataDir: this.paths.userData,
+        headless: shouldUseHeadless ? false : false, // Force headed mode for extensions
         args: [
-          "--no-sandbox",
-          "--disable-setuid-sandbox",
-          "--disable-dev-shm-usage",
-          "--no-first-run",
-          "--no-zygote",
-          "--disable-blink-features=AutomationControlled",
-          "--disable-infobars",
-          "--disable-extensions-except=" + extensionPath,
-          "--load-extension=" + extensionPath,
-          "--allowlisted-extension-id=pgojnojmmhpofjgdmaebadhbocahppod",
-          "--disable-web-security",
-          "--disable-features=VizDisplayCompositor",
-          "--enable-features=NetworkService",
-          "--remote-debugging-port=9222",
-          "--window-size=1920,1080",
-          // Critical for VNC/Xvfb environment
-          "--display=" + (process.env.DISPLAY || ":1"),
-          "--use-gl=swiftshader",
-          "--disable-software-rasterizer",
-          "--disable-background-timer-throttling",
-          "--disable-backgrounding-occluded-windows",
-          "--disable-renderer-backgrounding",
-          "--disable-field-trial-config",
-          "--disable-ipc-flooding-protection"
+          '--no-sandbox',
+          '--disable-setuid-sandbox',
+          '--disable-dev-shm-usage',
+          '--load-extension=' + extensionPath,
+          '--disable-extensions-except=' + extensionPath,
+          '--enable-extensions',
+          '--disable-web-security',
+          '--disable-extension-content-verification',
+          '--allow-running-insecure-content',
+          '--enable-logging',
+          '--log-level=0'
         ],
-        defaultViewport: null, // Use natural browser viewport
-        slowMo: 100, // Slower for better interactions
-        executablePath: this.chromeExecutablePath,
-        timeout: 120000, // Increased timeout
-        protocolTimeout: 120000,
-        ignoreDefaultArgs: ['--enable-automation'],
-        ignoreHTTPSErrors: true,
-        devtools: false
+        ignoreDefaultArgs: [
+          '--disable-extensions',
+          '--enable-automation'
+        ]
       }
     };
   }
