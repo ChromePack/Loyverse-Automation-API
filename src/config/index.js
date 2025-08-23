@@ -203,7 +203,7 @@ class Config {
    */
   get webhook() {
     return {
-      url: 'https://n8n.srv955713.hstgr.cloud/webhook-test/eb25f31a-326c-4434-a327-eadd26183b51',
+      url: 'https://n8n.srv955713.hstgr.cloud/webhook/eb25f31a-326c-4434-a327-eadd26183b51',
       timeout: parseInt(process.env.WEBHOOK_TIMEOUT, 10) || 10000, // 10 seconds
       maxRetries: parseInt(process.env.WEBHOOK_MAX_RETRIES, 10) || 3,
       retryDelay: parseInt(process.env.WEBHOOK_RETRY_DELAY, 10) || 2000, // 2 seconds
