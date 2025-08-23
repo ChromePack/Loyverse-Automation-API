@@ -10,7 +10,7 @@ class AuthService {
   constructor(browserService) {
     this.browserService = browserService;
     this.isAuthenticated = false;
-    this.loginUrl = 'https://loyverse.com/en/login';
+    this.loginUrl = 'https://r.loyverse.com';
     this.dashboardUrl = 'https://r.loyverse.com';
   }
 
@@ -299,10 +299,12 @@ class AuthService {
       const isAlreadyAuthenticated = await this.verifyAuthentication(page);
       if (isAlreadyAuthenticated) {
         this.isAuthenticated = true;
-        Logger.info('✅ Already authenticated - session persisted');
+        Logger.info('✅ Already authenticated - session persisted, skipping login');
         return true;
       }
 
+      Logger.info('🔒 Not authenticated - proceeding with login flow');
+      
       // Navigate to login page
       await this.navigateToLogin(page);
 
@@ -655,38 +657,57 @@ class AuthService {
   }
 
   /**
-   * Verify current authentication status
+   * Verify current authentication status by navigating to main site first
    * @param {Page} page - Puppeteer page instance
    * @returns {Promise<boolean>} True if authenticated
    */
   async verifyAuthentication(page) {
     try {
-      const currentUrl = page.url();
+      Logger.info('🔍 Checking existing session by navigating to main site');
+      
+      // First, navigate to the main Loyverse URL
+      await page.goto('https://r.loyverse.com/', {
+        waitUntil: 'networkidle2',
+        timeout: config.timeouts.navigation
+      });
 
-      // Check if we're on the dashboard
+      // Wait a moment for any redirects to complete
+      await new Promise(resolve => setTimeout(resolve, 2000));
+
+      const currentUrl = page.url();
+      Logger.info('🌐 After navigation, current URL:', { url: currentUrl });
+
+      // If we get redirected to login page, we're not authenticated
+      if (currentUrl.includes('/login') || currentUrl.includes('loyverse.com/en/login')) {
+        this.isAuthenticated = false;
+        Logger.info('🔒 Session expired - redirected to login page');
+        return false;
+      }
+
+      // If we stay on r.loyverse.com (dashboard), we're authenticated
       if (currentUrl.includes('r.loyverse.com')) {
         this.isAuthenticated = true;
-        Logger.info('Authentication verified - on dashboard');
+        Logger.info('✅ Session valid - already authenticated on dashboard');
         return true;
       }
 
-      // Check for dashboard elements
+      // Additional check for dashboard elements as fallback
       try {
         await page.waitForSelector(SELECTORS.DASHBOARD.INDICATOR, {
           visible: true,
           timeout: 5000
         });
         this.isAuthenticated = true;
-        Logger.info('Authentication verified - dashboard elements found');
+        Logger.info('✅ Session valid - dashboard elements found');
         return true;
       } catch (dashboardError) {
         this.isAuthenticated = false;
-        Logger.warn('Authentication verification failed - not on dashboard');
+        Logger.warn('🔒 Session verification failed - no dashboard elements found');
         return false;
       }
     } catch (error) {
       this.isAuthenticated = false;
-      Logger.error('Authentication verification error', {
+      Logger.error('❌ Session verification error', {
         error: error.message
       });
       return false;

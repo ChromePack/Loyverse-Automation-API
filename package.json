@@ -9,7 +9,6 @@
     "start": "node src/server.js",
     "start:prod": "./start-server.sh",
     "dev": "nodemon src/server.js",
-    "clear-session": "node clear-session.js",
     "lint": "eslint src/",
     "lint:fix": "eslint src/ --fix",
     "format": "prettier --write src/",

@@ -127,6 +127,7 @@ class Config {
       navigationTimeout: parseInt(process.env.NAVIGATION_TIMEOUT, 10) || 30000,
       launchOptions: {
         headless: shouldUseHeadless ? false : false, // Force headed mode for extensions
+        userDataDir: path.join(__dirname, '..', '..', process.env.USER_DATA_DIR || 'chrome-user-data'),
         args: [
           '--no-sandbox',
           '--disable-setuid-sandbox',
