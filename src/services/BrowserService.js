@@ -27,7 +27,7 @@ class BrowserService {
   async launch() {
     try {
       const isServerEnvironment = !process.env.DISPLAY && process.platform === 'linux';
-      
+
       Logger.info('Launching browser with configuration', {
         headless: config.puppeteer.headless,
         downloadPath: this.downloadPath,
@@ -35,6 +35,9 @@ class BrowserService {
         serverEnvironment: isServerEnvironment,
         display: process.env.DISPLAY || 'not set'
       });
+
+      // Check for Chrome user data directory locks
+      await this.checkUserDataLock();
 
       // Ensure directories exist
       await this.ensureDownloadDirectory();
@@ -436,6 +439,29 @@ class BrowserService {
         error: error.message
       });
       // Don't throw error for debugging operations
+    }
+  }
+
+  /**
+   * Check for Chrome user data directory locks
+   * @returns {Promise<void>}
+   */
+  async checkUserDataLock() {
+    try {
+      const lockFilePath = path.join(config.paths.userData, 'SingletonLock');
+
+      try {
+        await fs.access(lockFilePath);
+        Logger.warn('⚠️  Chrome user data directory may be locked by another Chrome instance');
+        Logger.warn('💡 If browser fails to launch:');
+        Logger.warn('   1. Close all Chrome browsers');
+        Logger.warn('   2. Or set USER_DATA_DIR in .env to use a different profile');
+      } catch {
+        // Lock file doesn't exist, we're good
+        Logger.debug('User data directory is not locked');
+      }
+    } catch (error) {
+      Logger.debug('Could not check for lock file', { error: error.message });
     }
   }
 

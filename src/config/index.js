@@ -105,43 +105,74 @@ class Config {
    * Uses 2captcha for CAPTCHA solving
    */
   get puppeteer() {
-    // Detect if running in server environment (no DISPLAY)
-    const isServerEnvironment = !process.env.DISPLAY && process.platform === 'linux';
-    const shouldUseHeadless = isServerEnvironment && process.env.FORCE_HEADLESS === 'true';
+    // Detect if running in server environment
+    const isLinux = process.platform === 'linux';
+    const hasDisplay = !!process.env.DISPLAY;
+    const isServerEnvironment = isLinux && !hasDisplay;
+
+    // Determine headless mode
+    const shouldUseHeadless = process.env.FORCE_HEADLESS === 'true' ||
+                              (isServerEnvironment && process.env.FORCE_HEADLESS !== 'false');
 
     console.log('🔍 Puppeteer Environment Check:', {
       platform: process.platform,
       display: process.env.DISPLAY || 'not set',
       nodeEnv: process.env.NODE_ENV || 'not set',
+      isLinux,
+      hasDisplay,
       isServerEnvironment,
       shouldUseHeadless,
       forceHeadless: process.env.FORCE_HEADLESS || 'not set'
     });
+
+    const launchArgs = [
+      '--no-sandbox',
+      '--disable-setuid-sandbox',
+      '--disable-dev-shm-usage',
+      '--disable-blink-features=AutomationControlled',
+      '--disable-features=IsolateOrigins,site-per-process',
+      '--window-size=1920,1080'
+    ];
+
+    // Linux-specific flags for server environment
+    if (isLinux) {
+      launchArgs.push(
+        '--disable-gpu',
+        '--disable-software-rasterizer',
+        '--disable-extensions',
+        '--no-first-run',
+        '--no-zygote'
+      );
+
+      // Add display if available
+      if (hasDisplay) {
+        launchArgs.push(`--display=${process.env.DISPLAY}`);
+      }
+    } else {
+      // Windows/Mac specific
+      launchArgs.push('--start-maximized');
+    }
+
+    // Add web security flags only if needed
+    if (process.env.DISABLE_WEB_SECURITY === 'true') {
+      launchArgs.push('--disable-web-security');
+      launchArgs.push('--allow-running-insecure-content');
+    }
 
     return {
       headless: shouldUseHeadless ? 'new' : false,
       downloadTimeout: parseInt(process.env.DOWNLOAD_TIMEOUT, 10) || 30000,
       navigationTimeout: parseInt(process.env.NAVIGATION_TIMEOUT, 10) || 30000,
       launchOptions: {
-        headless: shouldUseHeadless,
+        headless: shouldUseHeadless ? 'new' : false,
         executablePath: this.chromeExecutablePath || executablePath(),
         userDataDir: path.join(__dirname, '..', '..', process.env.USER_DATA_DIR || 'chrome-user-data'),
-        args: [
-          '--no-sandbox',
-          '--disable-setuid-sandbox',
-          '--disable-dev-shm-usage',
-          '--disable-web-security',
-          '--allow-running-insecure-content',
-          '--disable-blink-features=AutomationControlled',
-          '--enable-logging',
-          '--log-level=0',
-          '--disable-gpu',
-          '--window-size=1920,1080'
-        ],
-        ignoreDefaultArgs: [
-          '--enable-automation'
-        ],
-        timeout: 60000
+        args: launchArgs,
+        ignoreDefaultArgs: ['--enable-automation'],
+        dumpio: isLinux, // Enable debugging output on Linux
+        pipe: isLinux, // Use pipe instead of WebSocket on Linux
+        timeout: 120000, // 2 minutes timeout for server environments
+        protocolTimeout: 120000
       }
     };
   }
