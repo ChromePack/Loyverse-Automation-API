@@ -124,6 +124,7 @@ class Config {
       navigationTimeout: parseInt(process.env.NAVIGATION_TIMEOUT, 10) || 30000,
       launchOptions: {
         headless: shouldUseHeadless,
+        executablePath: this.chromeExecutablePath || executablePath(),
         userDataDir: path.join(__dirname, '..', '..', process.env.USER_DATA_DIR || 'chrome-user-data'),
         args: [
           '--no-sandbox',
@@ -131,12 +132,16 @@ class Config {
           '--disable-dev-shm-usage',
           '--disable-web-security',
           '--allow-running-insecure-content',
+          '--disable-blink-features=AutomationControlled',
           '--enable-logging',
-          '--log-level=0'
+          '--log-level=0',
+          '--disable-gpu',
+          '--window-size=1920,1080'
         ],
         ignoreDefaultArgs: [
           '--enable-automation'
-        ]
+        ],
+        timeout: 60000
       }
     };
   }
