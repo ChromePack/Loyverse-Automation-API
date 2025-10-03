@@ -4,7 +4,11 @@
       "Bash(chmod:*)",
       "Bash(yarn test)",
       "Bash(node:*)",
-      "Bash(yarn test:*)"
+      "Bash(yarn test:*)",
+      "Bash(rm:*)",
+      "Bash(yarn add:*)",
+      "Bash(yarn lint)",
+      "Bash(yarn lint:*)"
     ],
     "deny": [],
     "ask": []

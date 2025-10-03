@@ -46,7 +46,7 @@ This is a **Loyverse POS Automation API** built with Express.js and Puppeteer fo
 
 **Browser Management**
 - `BrowserService` - Manages Puppeteer browser lifecycle with enhanced anti-detection
-- Includes CapSolver browser extension for CAPTCHA handling
+- Includes 2captcha integration for CAPTCHA handling
 - Persistent user data directory for session management
 - Headless/headed mode detection based on environment
 
@@ -76,9 +76,10 @@ This is a **Loyverse POS Automation API** built with Express.js and Puppeteer fo
 2. Authenticate with Loyverse using human-like patterns
 3. Navigate to goods reports section
 4. Apply date filters and select specific stores
-5. Export CSV data for each store
-6. Parse, validate, and aggregate data
-7. Return structured JSON response
+5. Handle any CAPTCHAs using 2captcha service
+6. Export CSV data for each store
+7. Parse, validate, and aggregate data
+8. Return structured JSON response
 
 ## Configuration
 
@@ -90,9 +91,9 @@ This is a **Loyverse POS Automation API** built with Express.js and Puppeteer fo
 
 ### Browser Configuration
 - Puppeteer with stealth plugin for detection avoidance
-- CapSolver extension loaded for CAPTCHA handling
+- 2captcha service integration for CAPTCHA handling
 - Persistent Chrome user data for session management
-- Custom Chrome flags for stability and extension support
+- Custom Chrome flags for stability and performance
 
 ## Security Considerations
 

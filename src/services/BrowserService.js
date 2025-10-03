@@ -1,18 +1,9 @@
-// Use regular puppeteer for extension compatibility
+// Use regular puppeteer for better compatibility
 const puppeteer = require('puppeteer');
 const fs = require('fs').promises;
 const path = require('path');
 const config = require('../config');
-
-// Use reCAPTCHA plugin for enhanced CAPTCHA handling
-  // puppeteer.use(RecaptchaPlugin({
-  //   provider: {
-  //     id: '2captcha',
-  //     token: process.env.CAPTCHA_SOLVER_TOKEN || 'MANUAL' // Use 'MANUAL' for manual solving
-  //   },
-  //   visualFeedback: true // Show visual feedback during solving
-  // }));
-
+const CaptchaService = require('./CaptchaService');
 const { Logger } = require('../utils/logger');
 
 /**
@@ -25,6 +16,7 @@ class BrowserService {
     this.pages = new Map();
     this.downloadPath = config.paths.downloads;
     this.isInitialized = false;
+    this.captchaService = new CaptchaService();
   }
 
   /**
@@ -179,7 +171,7 @@ class BrowserService {
       await page.evaluateOnNewDocument(() => {
         // Enhanced webdriver property handling - avoid redefinition errors
         try {
-          if (!navigator.hasOwnProperty('webdriver')) {
+          if (!Object.prototype.hasOwnProperty.call(navigator, 'webdriver')) {
             Object.defineProperty(navigator, 'webdriver', {
               get: () => undefined,
               configurable: true
@@ -220,8 +212,12 @@ class BrowserService {
         
         // Fix viewport and device properties
         try {
-          Object.defineProperty(screen, 'width', { get: () => 1920, configurable: true });
-          Object.defineProperty(screen, 'height', { get: () => 1080, configurable: true });
+          if (typeof screen !== 'undefined') {
+            /* eslint-disable no-undef */
+            Object.defineProperty(screen, 'width', { get: () => 1920, configurable: true });
+            Object.defineProperty(screen, 'height', { get: () => 1080, configurable: true });
+            /* eslint-enable no-undef */
+          }
         } catch (e) {
           // Ignore errors
         }
@@ -233,10 +229,10 @@ class BrowserService {
           }
         });
 
-        // Add CapSolver extension detection helper
+        // Add CAPTCHA detection helper
         window.addEventListener('load', () => {
-          // Mark that we expect CapSolver to be loaded
-          window.capsolverExpected = true;
+          // Mark that we have CAPTCHA detection enabled
+          window.captchaDetectionEnabled = true;
         });
       });
 
@@ -563,111 +559,88 @@ class BrowserService {
   }
 
   /**
-   * Check if extensions are loaded properly
+   * Check browser configuration and CAPTCHA detection capabilities
    * @param {Page} page - Puppeteer page instance
-   * @returns {Promise<Object>} Extension status information
+   * @returns {Promise<Object>} Browser status information
    */
-  async checkExtensions(page) {
+  async checkBrowserConfig(page) {
     try {
-      const extensionInfo = await page.evaluate(() => {
+      const browserInfo = await page.evaluate(() => {
         const info = {
-          capsolverFound: false,
-          extensionCount: 0,
+          captchaDetectionEnabled: !!window.captchaDetectionEnabled,
           chromeRuntimeExists: !!window.chrome?.runtime,
-          extensionDetails: [],
-          capsolverScripts: [],
+          userAgent: navigator.userAgent,
+          webdriver: navigator.webdriver,
           injectedScripts: []
         };
 
-        // Check for CapSolver specific markers
-        if (window.capsolver || 
-            document.querySelector('[data-capsolver]') ||
-            document.querySelector('meta[name="capsolver-extension"]')) {
-          info.capsolverFound = true;
-        }
-
-        // Check for CapSolver extension scripts (more reliable detection)
+        // Check for extension scripts
         const scripts = Array.from(document.querySelectorAll('script'));
         scripts.forEach(script => {
-          if (script.src) {
+          if (script.src && script.src.includes('chrome-extension://')) {
             info.injectedScripts.push(script.src);
-            // CapSolver extension ID is pgojnojmmhpofjgdmaebadhbocahppod
-            if (script.src.includes('chrome-extension://pgojnojmmhpofjgdmaebadhbocahppod') ||
-                script.src.includes('capsolver')) {
-              info.capsolverScripts.push(script.src);
-              info.capsolverFound = true;
-            }
           }
         });
 
-        // Check for extension content scripts markers
-        if (document.documentElement.hasAttribute('data-capsolver') ||
-            document.querySelector('[class*="capsolver"]') ||
-            document.querySelector('[id*="capsolver"]')) {
-          info.capsolverFound = true;
-        }
-
-        // Enhanced extension script detection - check all extension://* scripts
-        const extensionScripts = info.injectedScripts.filter(src => 
-          src.includes('chrome-extension://') || src.includes('extension://')
-        );
-        
-        // Update extension scripts list
-        if (extensionScripts.length > 0) {
-          info.extensionCount = 1; // We know we have at least one extension
-          
-          // Check specifically for CapSolver extension ID
-          const capsolverExtensionScripts = extensionScripts.filter(src =>
-            src.includes('pgojnojmmhpofjgdmaebadhbocahppod')
-          );
-          
-          if (capsolverExtensionScripts.length > 0) {
-            info.capsolverFound = true;
-            info.capsolverScripts = capsolverExtensionScripts;
-          }
-        }
-        
-        // Override capsolverScripts with the correct detection from extension scripts
-        const allCapsolverScripts = info.injectedScripts.filter(src =>
-          src.includes('chrome-extension://pgojnojmmhpofjgdmaebadhbocahppod')
-        );
-        
-        if (allCapsolverScripts.length > 0) {
-          info.capsolverFound = true;
-          info.capsolverScripts = allCapsolverScripts;
-          info.extensionCount = 1;
-        }
-
-        // Check chrome.runtime.getManifest if available
-        if (window.chrome?.runtime?.getManifest) {
-          try {
-            const manifest = chrome.runtime.getManifest();
-            if (manifest) {
-              info.extensionDetails.push({
-                name: manifest.name,
-                version: manifest.version,
-                id: chrome.runtime.id
-              });
-              info.extensionCount++;
-              
-              // Check if this is CapSolver
-              if (manifest.name && manifest.name.toLowerCase().includes('capsolver')) {
-                info.capsolverFound = true;
-              }
-            }
-          } catch (e) {
-            // Extension context may not be available in content script
-          }
-        }
+        // Check for various bot detection markers
+        info.botDetectionMarkers = {
+          webdriver: !!navigator.webdriver,
+          chromeRuntime: !!window.chrome?.runtime,
+          permissions: !!navigator.permissions,
+          plugins: navigator.plugins.length,
+          languages: navigator.languages.length
+        };
 
         return info;
       });
 
-      Logger.info('Extension check completed', extensionInfo);
-      return extensionInfo;
+      Logger.info('Browser configuration check completed', browserInfo);
+      return browserInfo;
     } catch (error) {
-      Logger.error('Failed to check extensions', { error: error.message });
+      Logger.error('Failed to check browser configuration', { error: error.message });
       return { error: error.message };
+    }
+  }
+
+  /**
+   * Handle CAPTCHA detection and solving on a page
+   * @param {Page} page - Puppeteer page instance
+   * @returns {Promise<boolean>} True if CAPTCHA was detected and solved
+   */
+  async handleCaptcha(page) {
+    try {
+      Logger.info('Checking for CAPTCHAs on page', { url: page.url() });
+
+      const captchaSolved = await this.captchaService.autoSolve(page);
+
+      if (captchaSolved) {
+        Logger.info('CAPTCHA detected and solved successfully');
+        // Wait a moment for the solution to be processed
+        await page.waitForTimeout(2000);
+      } else {
+        Logger.debug('No CAPTCHA detected or solving failed');
+      }
+
+      return captchaSolved;
+    } catch (error) {
+      Logger.error('Error handling CAPTCHA', {
+        error: error.message,
+        url: page.url()
+      });
+      return false;
+    }
+  }
+
+  /**
+   * Get CAPTCHA service balance
+   * @returns {Promise<number|null>} Balance or null if unavailable
+   */
+  async getCaptchaBalance() {
+    try {
+      return await this.captchaService.getBalance();
+    } catch (error) {
+      Logger.error('Failed to get CAPTCHA balance', { error: error.message });
+      return null;
     }
   }
 

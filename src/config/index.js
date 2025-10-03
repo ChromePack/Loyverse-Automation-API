@@ -102,47 +102,39 @@ class Config {
 
   /**
    * Enhanced Puppeteer configuration with advanced anti-detection measures
-   * Implements Option 1 (Enhanced Manual CAPTCHA + Better Stealth) and Option 2 (Undetected-Chromedriver)
+   * Uses 2captcha for CAPTCHA solving
    */
   get puppeteer() {
     // Detect if running in server environment (no DISPLAY)
     const isServerEnvironment = !process.env.DISPLAY && process.platform === 'linux';
-    // Force headed mode when using extensions for better compatibility
     const shouldUseHeadless = isServerEnvironment && process.env.FORCE_HEADLESS === 'true';
-    const extensionPath = path.join(__dirname, '..', '..', 'CapSolver.Browser.Extension');
-    
+
     console.log('🔍 Puppeteer Environment Check:', {
       platform: process.platform,
       display: process.env.DISPLAY || 'not set',
       nodeEnv: process.env.NODE_ENV || 'not set',
       isServerEnvironment,
       shouldUseHeadless,
-      extensionPath,
       forceHeadless: process.env.FORCE_HEADLESS || 'not set'
     });
-    
+
     return {
       headless: shouldUseHeadless ? 'new' : false,
       downloadTimeout: parseInt(process.env.DOWNLOAD_TIMEOUT, 10) || 30000,
       navigationTimeout: parseInt(process.env.NAVIGATION_TIMEOUT, 10) || 30000,
       launchOptions: {
-        headless: shouldUseHeadless ? false : false, // Force headed mode for extensions
+        headless: shouldUseHeadless,
         userDataDir: path.join(__dirname, '..', '..', process.env.USER_DATA_DIR || 'chrome-user-data'),
         args: [
           '--no-sandbox',
           '--disable-setuid-sandbox',
           '--disable-dev-shm-usage',
-          '--load-extension=' + extensionPath,
-          '--disable-extensions-except=' + extensionPath,
-          '--enable-extensions',
           '--disable-web-security',
-          '--disable-extension-content-verification',
           '--allow-running-insecure-content',
           '--enable-logging',
           '--log-level=0'
         ],
         ignoreDefaultArgs: [
-          '--disable-extensions',
           '--enable-automation'
         ]
       }
@@ -209,6 +201,18 @@ class Config {
       maxRetries: parseInt(process.env.WEBHOOK_MAX_RETRIES, 10) || 3,
       retryDelay: parseInt(process.env.WEBHOOK_RETRY_DELAY, 10) || 2000, // 2 seconds
       enabled: process.env.WEBHOOK_ENABLED !== 'false' // enabled by default
+    };
+  }
+
+  /**
+   * 2captcha configuration for CAPTCHA solving
+   */
+  get captcha() {
+    return {
+      apiKey: process.env.CAPTCHA_API_KEY || 'e4d9356708aae1a75325447c995c1833',
+      timeout: parseInt(process.env.CAPTCHA_TIMEOUT, 10) || 120000, // 2 minutes
+      pollingInterval: parseInt(process.env.CAPTCHA_POLLING_INTERVAL, 10) || 5000, // 5 seconds
+      maxRetries: parseInt(process.env.CAPTCHA_MAX_RETRIES, 10) || 3
     };
   }
 }
