@@ -168,9 +168,24 @@ class BrowserService {
         const url = request.url();
         const headers = { ...request.headers() };
 
-        // Only apply custom cache headers to loyverse.com requests
-        // This prevents CORS errors with third-party resources (fonts, analytics, etc.)
-        if (url.includes('loyverse.com')) {
+        // List of third-party domains to exclude from custom headers
+        const thirdPartyDomains = [
+          'fonts.gstatic.com',
+          'fonts.googleapis.com',
+          'gstatic.com',
+          'google.com',
+          'googleapis.com',
+          'clarity.ms',
+          'mixpanel.com',
+          'api-js.mixpanel.com',
+          'recaptcha.net'
+        ];
+
+        // Check if URL is a third-party resource
+        const isThirdParty = thirdPartyDomains.some(domain => url.includes(domain));
+
+        // Only apply custom headers to loyverse.com requests, skip third-party
+        if (url.includes('loyverse.com') && !isThirdParty) {
           headers['Accept-Language'] = 'en-US,en;q=0.9';
           headers['Accept-Encoding'] = 'gzip, deflate, br';
           headers['Accept'] = 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8';
