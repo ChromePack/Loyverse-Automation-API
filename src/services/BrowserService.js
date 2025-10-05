@@ -161,13 +161,24 @@ class BrowserService {
         'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
       );
 
-      // Set extra headers for stealth
-      await page.setExtraHTTPHeaders({
-        'Accept-Language': 'en-US,en;q=0.9',
-        'Accept-Encoding': 'gzip, deflate, br',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
-        'Cache-Control': 'no-cache',
-        'Pragma': 'no-cache'
+      // Enable request interception to selectively apply headers
+      await page.setRequestInterception(true);
+
+      page.on('request', (request) => {
+        const url = request.url();
+        const headers = { ...request.headers() };
+
+        // Only apply custom cache headers to loyverse.com requests
+        // This prevents CORS errors with third-party resources (fonts, analytics, etc.)
+        if (url.includes('loyverse.com')) {
+          headers['Accept-Language'] = 'en-US,en;q=0.9';
+          headers['Accept-Encoding'] = 'gzip, deflate, br';
+          headers['Accept'] = 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8';
+          headers['Cache-Control'] = 'no-cache';
+          headers['Pragma'] = 'no-cache';
+        }
+
+        request.continue({ headers });
       });
 
       // Configure page for better interaction in VNC environment
