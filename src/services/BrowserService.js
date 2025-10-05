@@ -184,8 +184,9 @@ class BrowserService {
         // Check if URL is a third-party resource
         const isThirdParty = thirdPartyDomains.some(domain => url.includes(domain));
 
-        // Only apply custom headers to loyverse.com requests, skip third-party
-        if (url.includes('loyverse.com') && !isThirdParty) {
+        // Only apply custom headers if NOT a third-party resource
+        // This includes loyverse.com and any other first-party resources
+        if (!isThirdParty) {
           headers['Accept-Language'] = 'en-US,en;q=0.9';
           headers['Accept-Encoding'] = 'gzip, deflate, br';
           headers['Accept'] = 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8';
