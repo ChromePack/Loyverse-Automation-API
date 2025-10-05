@@ -1,6 +1,6 @@
 const { Solver } = require('2captcha');
 const Config = require('../config');
-const { Logger } = require('../utils/Logger');
+const { Logger } = require('../utils/logger');
 
 /**
  * Service for handling CAPTCHA solving using 2captcha
