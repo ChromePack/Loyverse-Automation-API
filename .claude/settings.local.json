@@ -9,7 +9,12 @@
       "Bash(yarn add:*)",
       "Bash(yarn lint)",
       "Bash(yarn lint:*)",
-      "Bash(npm --version)"
+      "Bash(npm --version)",
+      "Bash(curl:*)",
+      "Bash(yarn start:*)",
+      "Bash(netstat:*)",
+      "Bash(findstr:*)",
+      "Bash(taskkill:*)"
     ],
     "deny": [],
     "ask": []

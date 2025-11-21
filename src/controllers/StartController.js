@@ -15,10 +15,39 @@ class GoodsReportController {
   /**
    * Triggers the visible automation demo as a background job
    * POST /api/start
+   *
+   * Request body can include:
+   * - webhookUrl: Optional custom webhook URL to send results to
+   * - any other parameters needed for the workflow
    */
   async startAutomation(req, res) {
     const requestId = req.requestId;
-    Logger.info('Received /start automation request', { requestId });
+    const { webhookUrl } = req.body;
+
+    Logger.info('Received /start automation request', {
+      requestId,
+      webhookUrl: webhookUrl || 'default'
+    });
+
+    // Validate custom webhook URL if provided
+    if (webhookUrl) {
+      const validation = webhookService.validateConfig(webhookUrl);
+      if (!validation.isValid) {
+        return res.status(400).json({
+          success: false,
+          error: {
+            code: 'INVALID_WEBHOOK_URL',
+            message: 'Invalid webhook URL provided',
+            details: validation.issues,
+            timestamp: new Date().toISOString()
+          },
+          metadata: {
+            request_id: requestId,
+            api_version: '1.0.0'
+          }
+        });
+      }
+    }
 
     // Check for an active job (pending or running)
     const activeJobEntry = Object.entries(jobs).find(
@@ -41,7 +70,13 @@ class GoodsReportController {
 
     // 1. Generate a job ID and store initial status
     const jobId = uuidv4();
-    jobs[jobId] = { status: 'running', result: null, error: null, startedAt: new Date() };
+    jobs[jobId] = {
+      status: 'running',
+      result: null,
+      error: null,
+      startedAt: new Date(),
+      webhookUrl: webhookUrl || null // Store custom webhook URL
+    };
 
     // 2. Run the automation in the background
     (async () => {
@@ -76,7 +111,14 @@ class GoodsReportController {
         startedAt: jobs[jobId].startedAt,
         finishedAt
       };
-      await webhookService.sendWebhook(payload, jobId);
+
+      // Send to custom webhook URL if provided, otherwise use default
+      const customWebhookUrl = jobs[jobId].webhookUrl;
+      if (customWebhookUrl) {
+        await webhookService.sendWebhook(payload, jobId, customWebhookUrl);
+      } else {
+        await webhookService.sendWebhook(payload, jobId);
+      }
 
       // Only now mark job as finished
       jobs[jobId] = jobData;
@@ -88,6 +130,7 @@ class GoodsReportController {
       jobId,
       status: 'running',
       message: 'Automation started. Check status with GET /api/start/' + jobId,
+      webhookUrl: webhookUrl || 'Using default webhook',
       metadata: {
         request_id: requestId,
         api_version: '1.0.0',
@@ -116,7 +159,8 @@ class GoodsReportController {
       result: job.result,
       error: job.error,
       startedAt: job.startedAt,
-      finishedAt: job.finishedAt || null
+      finishedAt: job.finishedAt || null,
+      webhookUrl: job.webhookUrl || 'Using default webhook'
     });
   }
 }

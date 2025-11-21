@@ -169,11 +169,11 @@ router.use('/reports', (req, res) => {
 });
 
 // Start automation endpoint
-router.get('/start', async (req, res) => {
+router.post('/start', async (req, res) => {
   await goodsReportController.startAutomation(req, res);
 });
 
-// Start automation endpoint
+// Get job status endpoint
 router.get('/start/:jobId', (req, res) => {
   goodsReportController.getJobStatus(req, res);
 });
